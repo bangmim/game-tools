@@ -56,6 +56,14 @@
 - 뉴스·프리뷰 블로그는 **참고 소스**이지 **근거 소스**가 아니다. 사이트 본문엔 공식 소스만 반영한다.
 - 불확실하면 "공식 공지에서 확인되는 대로 반영" placeholder로 두거나 생략한다.
 
+## 릴리스 규칙 (develop → main)
+- `develop → main` 머지는 **반드시 `/cnp --release`**로만. 수동 git merge/push 금지.
+- develop 위, 메인 디렉토리에서 호출.
+- 사전 체크: 쌓인 머지 커밋 리스트를 사용자에게 보여주고 명시 승인 필요.
+- `--no-ff` 머지로 "release 지점" 커밋이 main에 남음. 라이브 롤백 지점.
+- `main` push → Netlify 자동 빌드 → 라이브 반영 (약 3~5분).
+- 세부 동작은 `.claude/skills/cnp/SKILL.md` 참조.
+
 <!-- 예: 이 프로젝트는 develop 없이 main-only 모델을 쓴다면 아래 주석 해제 -->
 <!--
 ## 브랜치 모델 override
