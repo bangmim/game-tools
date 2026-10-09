@@ -1,25 +1,28 @@
 ---
 name: cnp
-description: ONLY invoke when the user explicitly types `/cnp` or `/cnp --merge`. Commits staged+unstaged changes, pushes current branch to origin, and (with --merge) merges into develop. NEVER auto-invoke this skill — commit/push/merge is forbidden without an explicit user command.
+description: ONLY invoke when the user explicitly types `/cnp`, `/cnp --merge`, or `/cnp --release`. Commits+pushes current branch; with --merge also merges into develop; with --release merges develop → main (production release). NEVER auto-invoke this skill — commit/push/merge is forbidden without an explicit user command.
 ---
 
-# /cnp — Commit · Push · (옵션) Merge
+# /cnp — Commit · Push · (옵션) Merge · (옵션) Release
 
 ## 호출 조건 (절대 규칙)
 
-- **오직 사용자가 `/cnp` 또는 `/cnp --merge` 를 명시적으로 입력했을 때만 실행한다.**
+- **오직 사용자가 `/cnp`, `/cnp --merge`, 또는 `/cnp --release` 를 명시적으로 입력했을 때만 실행한다.**
 - 작업 완료 후 사용자 요청 없이 자동으로 호출 금지.
-- "커밋해줘", "푸시해줘" 같은 자연어도 사용자가 직접 `/cnp` 명령어를 쓰지 않으면 실행하지 않는다. 대신 "/cnp 또는 /cnp --merge 를 입력해주세요"라고 안내한다.
+- "커밋해줘", "푸시해줘", "라이브 반영해줘" 같은 자연어도 사용자가 직접 `/cnp` 계열 명령어를 쓰지 않으면 실행하지 않는다. 대신 "/cnp, /cnp --merge, 또는 /cnp --release 를 입력해주세요"라고 안내한다.
 
 ## 플래그
 
-- `--merge`: 커밋+푸시 후 `develop`에 머지까지 진행.
-- 플래그 없음: 커밋+푸시만.
+- `/cnp` (플래그 없음): 커밋+푸시만. 작업 브랜치(`feat/*` 등)에서 호출.
+- `--merge`: 커밋+푸시 후 `develop`에 머지. 작업 브랜치에서 호출.
+- `--release`: `develop` → `main` 머지 + push (= 라이브 반영). **develop 위에서만** 호출.
 
-## 공통 사전 체크
+---
+
+## `/cnp` · `/cnp --merge` 사전 체크
 
 1. `git status`, `git diff` 로 현재 변경 내용을 확인한다.
-2. 변경이 전혀 없으면 "커밋할 변경이 없습니다"로 종료.
+2. 변경이 전혀 없으면 "커밋할 변경이 없습니다"로 종료. 단, 로컬 커밋이 origin에 push 안 된 상태면 push + (--merge시) 머지 흐름은 계속 진행.
 3. 현재 브랜치 이름을 확인한다. `main` 또는 `develop` 위에서 직접 호출된 경우 → 중단하고 "작업 브랜치에서 실행하세요"로 안내.
 4. **현재 작업 디렉토리가 워크트리인지 확인한다.**
    - `git rev-parse --git-dir` 실행
@@ -34,7 +37,25 @@ description: ONLY invoke when the user explicitly types `/cnp` or `/cnp --merge`
 6. 변경 내용을 한국어 2~4줄로 사용자에게 요약 (파일별이 아니라 "무엇을 바꿨는지" 관점).
 7. 커밋 메시지 초안을 사용자에게 보여주고 바로 다음 단계로 진행. (사용자가 수정 원하면 다시 요청할 것이므로 승인 대기는 불필요.)
 
-## 커밋 메시지 규칙
+## `/cnp --release` 사전 체크
+
+1. **현재 브랜치가 `develop`인지 확인.** 아니면 중단하고 "release는 develop에서만 실행하세요"로 안내.
+2. **메인 디렉토리인지 확인.** 워크트리면 중단: "release는 메인 디렉토리에서 실행하세요."
+3. `git fetch origin` 으로 원격 상태 갱신.
+4. `git log origin/main..origin/develop --oneline` 으로 develop에 쌓인 미반영 커밋 조회. 비어있으면 "릴리스할 변경이 없습니다 (main과 develop 동일)"로 종료.
+5. 머지 리스트를 사용자에게 보여주고 **명시 확인**:
+   ```
+   📦 release 대상 커밋 N개:
+   <hash> <subject>
+   <hash> <subject>
+   ...
+   main에 머지하면 Netlify 자동 빌드 → 라이브 반영됩니다. 진행할까요? (y/N)
+   ```
+   사용자가 명시적으로 승인한 경우에만 다음 단계 진행.
+
+---
+
+## 커밋 메시지 규칙 (/cnp · /cnp --merge)
 
 - Conventional Commits 사용. 접두사는 현재 브랜치 접두사와 일치시킨다 (`feat/` → `feat:` 등).
 - 제목: 영어, 72자 이내, 명령형.
@@ -59,6 +80,15 @@ description: ONLY invoke when the user explicitly types `/cnp` or `/cnp --merge`
   )"
   ```
 
+## 머지 커밋 메시지 (/cnp --release)
+
+- 포맷: `release: develop → main (YYYY-MM-DD)` (예: `release: develop → main (2026-10-09)`)
+- 로컬(한국) 기준 오늘 날짜.
+- `--no-ff` 머지로 main 브랜치에 release 지점을 커밋으로 남김 → `git log --first-parent main` 으로 릴리스 히스토리만 추적 가능.
+- 본문 (optional): 머지 커밋 수와 핵심 변경 요약 1~2줄.
+
+---
+
 ## 실행 흐름
 
 ### `/cnp` (머지 없음)
@@ -78,17 +108,36 @@ description: ONLY invoke when the user explicitly types `/cnp` or `/cnp --merge`
 7. **`develop`에 머문다. 작업 브랜치로 복귀 금지.** Claude의 기본 체크아웃 상태는 항상 `develop`.
 8. 사용자에게 묻는다: "작업 브랜치 `<작업브랜치>`를 삭제할까? (로컬 + origin)". 사용자 승인 시에만 삭제. 삭제 후에도 `develop`에 머문다.
 
-## 금지
+### `/cnp --release`
+
+0. 사전 체크 모두 통과 + 사용자 명시 승인 받음.
+1. `git checkout main && git pull --ff-only origin main`
+2. `git merge --no-ff develop -m "release: develop → main (YYYY-MM-DD)"`
+   - 날짜는 로컬(한국) 기준 오늘.
+   - 충돌 발생 시 자동 해결 금지. 머지 중단(`git merge --abort`)하고 사용자에게 보고 후 지시 대기.
+3. `git push origin main`
+4. `git checkout develop` 로 복귀 (CLAUDE.md "메인 디렉토리는 항상 develop" 규칙).
+5. 사용자에게 보고:
+   - release 머지 커밋 해시
+   - Netlify 자동 빌드 트리거됨 안내 (`main` push → Netlify 자동 CI)
+   - 라이브 URL + 예상 빌드 소요 시간 (3~5분)
+   - 라이브 반영 후 확인할 포인트 (critical 변경 있다면)
+6. 작업 브랜치 삭제 질문 **없음** (develop 유지).
+
+---
+
+## 금지 (전 플래그 공통)
 
 - `--force`, `--force-with-lease` push 금지 (사용자가 명시적으로 요청한 경우 외).
 - `--no-verify`, `--no-gpg-sign` 플래그 금지.
 - 사용자 승인 없는 브랜치 삭제 금지.
 - `.env`, 자격증명, 큰 바이너리 자동 커밋 금지. 발견 시 사용자에게 경고.
-- `main` 브랜치 직접 커밋/푸시 금지.
+- `main` 브랜치 직접 커밋 금지 (`--release`를 통한 자동 머지만 허용).
+- 충돌 자동 해결 금지. 전부 중단 + 사용자 지시 대기.
 
 ## 보고 형식
 
-마지막 사용자 메시지는 다음 형태:
+### `/cnp` · `/cnp --merge` 완료 메시지
 
 ```
 ✅ 커밋 완료
@@ -96,4 +145,15 @@ description: ONLY invoke when the user explicitly types `/cnp` or `/cnp --merge`
 - 커밋: <hash> <subject>
 - 원격: pushed to origin/<name>
 - (--merge 시) develop 머지 완료. 작업 브랜치 삭제할까?
+```
+
+### `/cnp --release` 완료 메시지
+
+```
+🚀 릴리스 완료
+- 머지 커밋: <hash> release: develop → main (YYYY-MM-DD)
+- main push: <old>..<new>
+- Netlify 자동 빌드 트리거됨 (약 3~5분 뒤 라이브 반영)
+- 라이브 URL: <project.netlify.app>
+- 포함된 머지: N개
 ```
