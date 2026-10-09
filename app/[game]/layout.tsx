@@ -5,6 +5,7 @@ import { GAMES, getGame } from "@/data/games";
 import { Disclaimer } from "@/components/Disclaimer";
 import { JsonLd } from "@/components/JsonLd";
 import { SITE_NAME, SITE_URL } from "@/lib/site";
+import { hasBeginnerChecklist } from "@/data/games/beginner";
 
 export function generateStaticParams() {
   return GAMES.map((g) => ({ game: g.slug }));
@@ -81,9 +82,12 @@ export default async function GameLayout({ params, children }: Props) {
           )}
         </header>
 
-        <div className="mb-6 flex gap-2 border-b border-[var(--color-border)]">
+        <div className="mb-6 flex flex-wrap gap-2 border-b border-[var(--color-border)]">
           <TabLink href={`/${g.slug}/gacha/`}>뽑기 확률 계산기</TabLink>
           <TabLink href={`/${g.slug}/coupon/`}>쿠폰 모음</TabLink>
+          {hasBeginnerChecklist(g.slug) && (
+            <TabLink href={`/${g.slug}/beginner/`}>초반 가이드</TabLink>
+          )}
         </div>
 
         {children}
