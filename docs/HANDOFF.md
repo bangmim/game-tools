@@ -66,14 +66,15 @@ AdSense 광고 수익. 아직 신청 전 (유입 쌓인 뒤 신청 예정).
 - **Team**: `mihyun`
 - **플랜**: Starter (무료)
 - **환경변수**: `NEXT_PUBLIC_SITE_URL=https://gameting.netlify.app` (대시보드 등록 완료)
-- **자동 CI**: GitHub 연결됨, main push 시 자동 빌드/배포
+- **자동 CI**: GitHub 연결됨, **`main` 브랜치 push 시** 자동 빌드/배포 (브랜치 모델 전환 후에도 트리거는 `main` 유지, §7.8)
 - **대시보드**: https://app.netlify.com/projects/gameting
 
 ### 2.3 GitHub 리포
 
 - **Owner**: `bangmim` (사용자 ID)
 - **Visibility**: **public** (수익화 관점에서도 운영 속도상 유리하다고 판단)
-- **Default branch**: `main`
+- **Default branch**: `develop` (2026-10-09 전환, §7.8). `main`은 Netlify production 트리거 전용 (= 배포 반영 지점)
+- **브랜치 모델**: `feat/*|fix/*|chore/*|docs/*|refactor/*|test/*` → `develop` → (안정화 묶음, 주 1회 등) → `main` (= 라이브 배포)
 - **커밋 작성자**: `bangmim <akiyun10@gmail.com>`
 
 ### 2.4 소유권 인증 상태
@@ -198,16 +199,28 @@ Next.js App Router, `[game]` 동적 세그먼트.
 
 ## 4. 운영 흐름
 
-### 4.1 코드 수정 → 배포 (일상)
+### 4.1 코드 수정 → 배포 (일상, 2026-10-09 전환 후)
+
+**브랜치 흐름**: `feat/*` (작업) → `develop` (통합/스테이징) → `main` (= 라이브 배포)
 
 ```bash
 cd ~/apps/game-tools
-# 1. 수정 (예: data/games/dokkaebi.ts 에 쿠폰 추가)
-# 2. 커밋 + push
-git add -A && git commit -m "feat(dokkaebi): add 쿠폰 XX"
-git push
-# → Netlify 자동 빌드 + 3~5분 뒤 라이브 반영
+
+# 1. develop 최신화 + 작업 브랜치 분기
+git checkout develop && git pull
+git checkout -b feat/add-coupon-xyz    # 네이밍: ^(feat|fix|chore|docs|refactor|test)/[a-z0-9-]+$
+
+# 2. 수정 (예: data/games/dokkaebi.ts 에 쿠폰 추가)
+
+# 3. 커밋 + push + develop 머지 — 반드시 `/cnp --merge` 로만 (CLAUDE.md 규칙)
+#    /cnp         → 커밋 + 현재 브랜치 origin push (develop 머지 X)
+#    /cnp --merge → 위 + develop 머지 + origin/develop push + 작업 브랜치 삭제 질문
+
+# 4. (주 1회 등 안정화 지점) develop → main 머지 → Netlify 자동 배포 트리거
+#    사용자가 수동으로 묶어서 올리거나, 별도 세션에서 지시
 ```
+
+> **중요**: develop에 push해도 라이브 반영 안 됨 (Netlify 트리거는 `main`). develop은 통합·스테이징 역할.
 
 ### 4.2 수동 배포 (CI 실패 백업용)
 
@@ -224,6 +237,10 @@ pnpm dev  # http://localhost:3000
 ### 4.4 새 게임 추가 (예: 템빨: 오버기어드)
 
 ```bash
+# 0. develop 최신화 + 작업 브랜치
+git checkout develop && git pull
+git checkout -b feat/add-tempal
+
 # 1. 데이터 파일 생성
 cat > data/games/tempal.ts <<'EOF'
 import type { Game } from "./types";
@@ -248,15 +265,13 @@ EOF
 #   import { tempal } from "./tempal";
 #   export const GAMES: Game[] = [dokkaebi, tempal];
 
-# 3. 커밋 push
-git add -A && git commit -m "feat: add 템빨: 오버기어드"
-git push
-# → /tempal/, /tempal/gacha/, /tempal/coupon/, sitemap 자동 생성
+# 3. 커밋 + develop 머지 (사용자가 `/cnp --merge` 입력)
+# → origin/develop 반영. 라이브 반영은 develop → main 머지 시점.
 ```
 
 ### 4.5 쿠폰 추가/수정
 
-`data/games/<slug>.ts` 의 `coupons` 배열 수정 → push.
+`feat/*` 브랜치 분기 → `data/games/<slug>.ts` 의 `coupons` 배열 수정 → `/cnp --merge`로 develop 반영 → (주 1회) develop→main 머지로 라이브.
 
 ```typescript
 coupons: [
@@ -378,6 +393,19 @@ c835862  chore: scaffold Next.js 16 game-tools with dokkaebi stub
 - Netlify CLI가 `netlify init` 때 자동 설치 (Netlify의 AI 에이전트 스킬 가이드, 380KB)
 - 공개 사이트와 무관, 리포 노이즈 제거 위해 `.gitignore` + `git rm --cached`
 
+### 7.8 main-only → develop + feat/* 전환 (2026-10-09)
+
+- **기존**: main 직접 push → Netlify 자동 배포 (혼자 운영 전제, 이전 §8의 "PR 과함" 판단)
+- **변경 후**: `feat/*|fix/*|...` 작업 브랜치 → `develop` (통합/스테이징) → (안정화 묶음, 주 1회 등) → `main` (= 배포)
+- **전환 이유**:
+  - 다른 Claude 프로젝트와 통일된 브랜치 흐름 (CLAUDE.md 규칙과 일치)
+  - 롤백 지점 명확화 (main의 각 커밋 = 라이브에 올라간 배포 단위)
+  - 머지 전 스테이징으로 "실험 커밋이 바로 라이브" 리스크 제거
+  - subagent isolation(워크트리) 패턴을 쓰려면 base 브랜치가 필요
+- **Netlify 트리거**: 그대로 `main` push 유지 (develop 자동 배포 X — develop은 통합 지점)
+- **GitHub default branch**: `main` → `develop` (사용자가 리포 Settings → General → Default branch에서 전환 필요. 또는 `gh api -X PATCH /repos/bangmim/game-tools -f default_branch=develop`)
+- **CLAUDE.md 규칙**: 커밋/push/머지는 반드시 `/cnp` 또는 `/cnp --merge`로만. Claude가 직접 `git commit/push/merge` 실행 금지.
+
 ---
 
 ## 8. 지켜야 할 원칙
@@ -396,7 +424,10 @@ c835862  chore: scaffold Next.js 16 game-tools with dokkaebi stub
 - 환경변수는 `NEXT_PUBLIC_` 접두어만 클라이언트 노출. 비밀은 Netlify 대시보드에만
 
 ### 운영
-- **main 직접 push** 패턴 유지 (혼자 운영이라 PR 과함)
+- **`main` 직접 push 금지** (2026-10-09 전환, §7.8). 모든 변경은 `feat/*|fix/*|...` → `develop` → (주 1회 등) → `main`
+- 브랜치 네이밍 정규식: `^(feat|fix|chore|test|docs|refactor)/[a-z0-9-]+$` (예: `feat/add-coupon-xyz`)
+- 커밋/push/머지는 **반드시 `/cnp` 또는 `/cnp --merge`로만** (Claude가 직접 `git commit/push/merge` 실행 금지, CLAUDE.md 규칙)
+- Netlify 라이브 반영은 **`main` push 시점** — develop 머지만으로는 배포 안 됨
 - 쿠폰 만료되어도 `expiresAt` 유지 — 삭제 X (`CouponList`가 자동 분리)
 - 쿠폰 추가 시 **커밋 메시지에 출처** 명시 (예: "feat(dokkaebi): 공식 공지 쿠폰 XX 추가 (2026-10-15)")
 
@@ -481,3 +512,4 @@ c835862  chore: scaffold Next.js 16 game-tools with dokkaebi stub
 | 날짜 | 섹션 | 변경 |
 |---|---|---|
 | 2026-10-09 | 전체 | 최초 작성 (트랙 D 1차 완결 시점) |
+| 2026-10-09 | §2.2, §2.3, §4.1, §4.4, §4.5, §7.8, §8 | main-only → `feat/*` → `develop` → `main` 브랜치 모델로 전환. Netlify 배포 트리거는 `main` 유지. |
