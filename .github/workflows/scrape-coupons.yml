@@ -1,0 +1,91 @@
+name: Scrape coupons
+
+on:
+  schedule:
+    # UTC 00:00 = KST 09:00 (매일 아침)
+    - cron: "0 0 * * *"
+  workflow_dispatch: {}
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write  # develop에 직접 push
+      issues: write    # release-reminder Issue 생성
+    steps:
+      - name: Checkout develop
+        uses: actions/checkout@v4
+        with:
+          ref: develop
+          fetch-depth: 0  # main vs develop diff 계산에 필요
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright chromium
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Scrape coupons
+        run: pnpm run scrape:coupons
+
+      - name: Commit & push if changed
+        id: commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if git diff --quiet -- data/games/; then
+            echo "No new coupons"
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          # 신규 쿠폰 수 집계 (+   code: 로 시작하는 라인)
+          N=$(git diff -- data/games/ | grep -cE "^\+\s+code:" || true)
+          DATE=$(TZ=Asia/Seoul date +%Y-%m-%d)
+          git add data/games/
+          git commit -m "feat(scrape): 공식 공지 쿠폰 ${N}개 자동 수집 (${DATE})"
+          git push origin develop
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+          echo "coupon_count=${N}" >> "$GITHUB_OUTPUT"
+
+      - name: Ensure release-reminder label exists
+        if: steps.commit.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh label create release-reminder \
+            --color BFD4F2 \
+            --description "develop에 자동 수집 쿠폰이 쌓였을 때 라이브 반영 알림" \
+            || true
+
+      - name: Open release-reminder issue if ≥10 scrape commits pending
+        if: steps.commit.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # main↔develop diff에서 feat(scrape): prefix 커밋 수 세기
+          git fetch origin main develop
+          PENDING=$(git log origin/main..origin/develop --pretty=format:"%s" | grep -c "^feat(scrape):" || true)
+          echo "Pending scrape commits: $PENDING"
+          if [ "${PENDING:-0}" -lt 10 ]; then
+            echo "임계값 (10) 미달 — Issue 생성 skip"
+            exit 0
+          fi
+          # 기존 open release-reminder Issue 있으면 skip (중복 방지)
+          EXISTING=$(gh issue list --label release-reminder --state open --json number --jq 'length')
+          if [ "${EXISTING:-0}" -gt 0 ]; then
+            echo "이미 open release-reminder issue 존재 — skip"
+            exit 0
+          fi
+          gh issue create \
+            --title "🚀 쿠폰 ${PENDING}개 쌓임 — /cnp --release 입력해서 라이브 반영" \
+            --body "develop에 자동 수집 쿠폰(feat(scrape):) ${PENDING}개가 쌓였습니다.<br/>main 라이브에 반영하려면 메인 세션에서 \`/cnp --release\` 입력하세요." \
+            --label release-reminder

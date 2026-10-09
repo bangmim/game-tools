@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "deploy": "next build && netlify deploy --prod --dir=out"
+    "deploy": "next build && netlify deploy --prod --dir=out",
+    "scrape:coupons": "tsx scripts/scrape-coupons.ts"
   },
   "dependencies": {
     "next": "16.4.0",
@@ -21,7 +22,9 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.4.0",
+    "playwright": "^1.64.0",
     "tailwindcss": "^4",
+    "tsx": "^4.23.15",
     "typescript": "^5"
   },
   "packageManager": "pnpm@10.0.0"
