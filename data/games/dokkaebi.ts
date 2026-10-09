@@ -52,4 +52,10 @@ export const dokkaebi: Game = {
     "카카오게임즈 신작",
     "슈퍼캣 MMORPG",
   ],
+  scrape: {
+    noticeListUrl: "https://forum.kakaogames.com/dokkaebi/postList/?code=notice",
+    // 공식 공지 제목에서 쿠폰 안내로 간주할 키워드 (OR 매칭)
+    titleKeywords: ["쿠폰", "코드"],
+    scrapeEnabled: true,
+  },
 };
