@@ -4,6 +4,18 @@ export type Coupon = {
   expiresAt: string | null;
 };
 
+export type BeginnerSection = {
+  title: string;
+  items: string[];
+  note?: string;
+};
+
+export type BeginnerChecklist = {
+  intro: string;
+  sections: BeginnerSection[];
+  sources: { label: string; url: string }[];
+};
+
 export type Game = {
   slug: string;
   name: string;
@@ -16,4 +28,5 @@ export type Game = {
   triesPresets: number[];
   coupons: Coupon[];
   keywords: string[];
+  beginnerChecklist?: BeginnerChecklist;
 };
