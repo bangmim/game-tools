@@ -17,16 +17,23 @@ export const dokkaebi: Game = {
       code: "도깨비1008",
       reward: "꿀떡 무기 외형",
       expiresAt: null,
+      // TODO: 공식 공지 URL 확인 후 기입. forum.kakaogames.com/dokkaebi 공지 섹션.
+      sourceUrl: null,
+      collectedAt: null,
     },
     {
       code: "애플1위풍악을울려라",
       reward: "염색 선택 상자, 역전 111,111, 1위 기념 도술 선택 상자",
       expiresAt: null,
+      sourceUrl: null,
+      collectedAt: null,
     },
     {
       code: "칭호나와라뚝딱",
       reward: "칭호, 역전 100,000",
       expiresAt: null,
+      sourceUrl: null,
+      collectedAt: null,
     },
   ],
   keywords: [

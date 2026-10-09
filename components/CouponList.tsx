@@ -121,6 +121,18 @@ export function CouponList({ coupons, couponUrl }: Props) {
                   기간 제한 없음
                 </div>
               )}
+              {c.sourceUrl && (
+                <div className="mt-2 text-xs">
+                  <a
+                    href={c.sourceUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[var(--color-brand)]/80 underline-offset-2 hover:underline"
+                  >
+                    공식 출처 ↗
+                  </a>
+                </div>
+              )}
             </li>
           );
         })}
