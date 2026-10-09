@@ -9,8 +9,10 @@ export type Game = {
   name: string;
   publisher: string;
   releasedAt: string;
+  tagline: string | null;
   couponUrl: string | null;
   ratePresets: number[];
   triesPresets: number[];
   coupons: Coupon[];
+  keywords: string[];
 };

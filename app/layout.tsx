@@ -1,18 +1,29 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import {
+  DEFAULT_KEYWORDS,
+  SITE_DESCRIPTION,
+  SITE_NAME,
+  SITE_TAGLINE,
+  SITE_URL,
+} from "@/lib/site";
 
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: {
-    default: "게임 도구",
-    template: "%s — 게임 도구",
+    default: `${SITE_NAME} — ${SITE_TAGLINE}`,
+    template: `%s — ${SITE_NAME}`,
   },
-  description:
-    "신작 모바일 게임의 뽑기 확률 계산기, 쿠폰 모음을 제공하는 팬 메이드 도구.",
+  description: SITE_DESCRIPTION,
+  keywords: DEFAULT_KEYWORDS,
+  alternates: { canonical: "/" },
   openGraph: {
-    title: "게임 도구",
-    description: "신작 모바일 게임 확률 계산기 · 쿠폰 모음",
+    title: `${SITE_NAME} — ${SITE_TAGLINE}`,
+    description: SITE_DESCRIPTION,
     type: "website",
     locale: "ko_KR",
+    siteName: SITE_NAME,
+    url: SITE_URL,
   },
   robots: { index: true, follow: true },
 };
@@ -20,7 +31,22 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="ko" className="antialiased">
-      <body className="min-h-screen flex flex-col">{children}</body>
+      <body className="min-h-screen flex flex-col">
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "WebSite",
+              name: SITE_NAME,
+              url: SITE_URL,
+              description: SITE_DESCRIPTION,
+              inLanguage: "ko-KR",
+            }),
+          }}
+        />
+        {children}
+      </body>
     </html>
   );
 }

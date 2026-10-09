@@ -112,12 +112,17 @@ export function GachaCalculator({ ratePresets, triesPresets }: Props) {
 
       <div className="mt-6 border-t border-[var(--color-border)] pt-5">
         <h2 className="text-lg font-semibold">결과</h2>
+
+        <div className="mt-3 overflow-hidden rounded-xl bg-gradient-to-br from-[var(--color-brand)] to-[#4958db] p-6 text-white">
+          <div className="text-xs tracking-wider text-white/80">
+            {tries}회에서 1개 이상 나올 확률
+          </div>
+          <div className="mt-1 text-5xl font-black text-[var(--color-accent)]">
+            {formatPercent(result.atLeastOne)}
+          </div>
+        </div>
+
         <div className="mt-3 grid gap-3 md:grid-cols-2">
-          <Stat
-            label={`${tries}회에서 1개 이상 나올 확률`}
-            value={formatPercent(result.atLeastOne)}
-            emphasize
-          />
           <Stat
             label={`${tries}회에서 한 번도 안 나올 확률`}
             value={formatPercent(result.none)}
@@ -222,25 +227,11 @@ function Presets({
   );
 }
 
-function Stat({
-  label,
-  value,
-  emphasize,
-}: {
-  label: string;
-  value: string;
-  emphasize?: boolean;
-}) {
+function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] p-3">
       <div className="text-xs text-[var(--color-ink)]/60">{label}</div>
-      <div
-        className={
-          emphasize
-            ? "mt-1 text-2xl font-bold text-[var(--color-accent)]"
-            : "mt-1 text-xl font-semibold text-[var(--color-ink)]"
-        }
-      >
+      <div className="mt-1 text-xl font-semibold text-[var(--color-ink)]">
         {value}
       </div>
     </div>
