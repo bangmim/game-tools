@@ -11,6 +11,7 @@ export type Game = {
   releasedAt: string;
   tagline: string | null;
   couponUrl: string | null;
+  probabilityUrl: string | null;
   ratePresets: number[];
   triesPresets: number[];
   coupons: Coupon[];
