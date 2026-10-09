@@ -75,9 +75,25 @@ export default async function GachaPage({ params }: Props) {
             href={g.probabilityUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="mt-4 inline-flex rounded-md border border-[var(--color-brand)] bg-white px-4 py-2 text-sm font-medium text-[var(--color-brand)] transition hover:bg-[var(--color-brand)] hover:text-white"
+            className="mt-4 inline-flex min-h-11 items-center gap-1.5 rounded-md border-2 border-[var(--color-brand)] bg-white px-4 py-2 text-sm font-medium text-[var(--color-brand)] transition hover:bg-[var(--color-brand)] hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand)]"
           >
-            {g.name} 공식 확률 공시 →
+            {g.name} 공식 확률 공시
+            {/* TODO(icon): CouponList.tsx의 ExternalLinkIcon과 동일 path. 사용처 3곳 되면 components/icons/로 추출. */}
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 16 16"
+              width="14"
+              height="14"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.75"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M9.5 2.5h4v4" />
+              <path d="M13.5 2.5 7 9" />
+              <path d="M12 9.5v3A1 1 0 0 1 11 13.5H3.5A1 1 0 0 1 2.5 12.5V5A1 1 0 0 1 3.5 4h3" />
+            </svg>
           </a>
         )}
       </section>
