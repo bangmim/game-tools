@@ -21,7 +21,8 @@
     Strict-Transport-Security = "max-age=63072000; includeSubDomains; preload"
     # CSP: Next.js app router inline hydration script 때문에 'unsafe-inline' 필요.
     # Pretendard는 cdn.jsdelivr.net font-src에만 허용. 다른 외부 리소스 없음.
-    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self' https://cdn.jsdelivr.net; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests"
+    # GA4: script-src에 googletagmanager, connect/img-src에 google-analytics 도메인 허용.
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; font-src 'self' https://cdn.jsdelivr.net; img-src 'self' data: https://www.google-analytics.com https://www.googletagmanager.com; connect-src 'self' https://www.google-analytics.com https://*.analytics.google.com https://*.g.doubleclick.net; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests"
 
 # Cache: HTML (short) / 정적 자산 (immutable)
 [[headers]]

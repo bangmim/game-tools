@@ -58,11 +58,39 @@ export default function PrivacyPage() {
             </p>
           </Section>
 
-          <Section title="3. 쿠키 및 로컬 저장소">
+          <Section title="3. 쿠키 및 분석 도구">
             <p>
-              현재 자체적인 쿠키나 추적 스크립트를 설치하지 않습니다. 향후 광고
-              또는 분석 도구를 도입하는 경우, 이 페이지를 먼저 갱신한 뒤
-              적용합니다.
+              사이트 유입 측정을 위해 <b>Google Analytics 4(GA4)</b>를 사용합니다.
+              GA4는 익명 식별용 쿠키(_ga, _ga_*)와 접속 정보를 Google 서버로
+              전송하며, IP 주소는 <b>익명화 설정(anonymize_ip)</b>으로
+              수집됩니다.
+            </p>
+            <p className="mt-2">
+              GA4는 페이지 조회·유입 경로·접속 환경을 집계하는 데 쓰이며,
+              운영자가 개별 이용자를 식별하는 데 사용하지 않습니다. 수집
+              항목·보관 기간 등 자세한 사항은{" "}
+              <a
+                href="https://policies.google.com/privacy"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-medium text-[var(--color-brand)] underline underline-offset-2"
+              >
+                Google 개인정보처리방침
+              </a>
+              을 참고하세요. GA 추적을 거부하려면{" "}
+              <a
+                href="https://tools.google.com/dlpage/gaoptout"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-medium text-[var(--color-brand)] underline underline-offset-2"
+              >
+                Google Analytics 차단 확장 프로그램
+              </a>
+              을 사용할 수 있습니다.
+            </p>
+            <p className="mt-2 text-xs text-[var(--color-ink)]/60">
+              계산기에 입력한 수치는 여전히 브라우저 안에서만 처리되며 GA로
+              전송되지 않습니다.
             </p>
           </Section>
 
