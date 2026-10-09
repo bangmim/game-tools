@@ -8,6 +8,7 @@ type Props = {
   label: string;
 };
 
+// next.config.ts의 trailingSlash: true 전제. 설정 변경 시 활성 판정이 깨짐.
 function normalize(path: string): string {
   if (!path) return "/";
   return path.endsWith("/") ? path : path + "/";
@@ -17,6 +18,8 @@ export function GameNavTab({ href, label }: Props) {
   const pathname = usePathname();
   const normalizedPath = normalize(pathname ?? "/");
   const normalizedHref = normalize(href);
+  // NOTE: /{game}/ 랜딩에서는 어떤 탭도 active가 아님. 랜딩이 메뉴 허브라서
+  // "선택 공허" 상태가 정직한 의도. aria-current를 거짓으로 설정하는 안티패턴 회피.
   const active =
     normalizedPath === normalizedHref ||
     normalizedPath.startsWith(normalizedHref);

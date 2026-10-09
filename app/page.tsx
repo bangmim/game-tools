@@ -52,7 +52,12 @@ export default function Home() {
           </div>
           <ul className="grid gap-3 sm:grid-cols-2">
             {GAMES.map((g) => {
+              // TODO(data-model): "예정" 문자열 매칭은 fragile. types.ts에
+              // status: "released" | "upcoming" 필드 추가되면 교체.
               const upcoming = g.releasedAt.includes("예정");
+              // TODO(coupon-count): 만료 쿠폰 제외 로직 필요. CouponList의
+              // active/expired 분리 카운트와 불일치 가능. 현재 dokkaebi는 전부
+              // expiresAt=null이라 noop.
               const couponCount = g.coupons.length;
               return (
                 <li key={g.slug}>
