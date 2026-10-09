@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 import { GAMES } from "@/data/games";
+import { hasBeginnerChecklist } from "@/data/games/beginner";
 import { SITE_URL } from "@/lib/site";
 
 export const dynamic = "force-static";
@@ -36,6 +37,14 @@ export default function sitemap(): MetadataRoute.Sitemap {
         priority: 0.9,
       },
     );
+    if (hasBeginnerChecklist(g.slug)) {
+      base.push({
+        url: `${SITE_URL}/${g.slug}/beginner/`,
+        lastModified: now,
+        changeFrequency: "weekly",
+        priority: 0.8,
+      });
+    }
   }
   return base;
 }

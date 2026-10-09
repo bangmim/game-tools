@@ -42,26 +42,65 @@ export default function Home() {
         </section>
 
         <section className="mt-10">
-          <h2 className="mb-3 text-sm font-semibold text-[var(--color-ink)]/60">
-            지원 게임
-          </h2>
-          <ul className="space-y-3">
-            {GAMES.map((g) => (
-              <li key={g.slug}>
-                <Link
-                  href={`/${g.slug}/`}
-                  className="flex items-center justify-between rounded-xl border border-[var(--color-border)] bg-white px-4 py-4 transition hover:border-[var(--color-brand)] hover:shadow-sm"
-                >
-                  <div>
-                    <div className="font-semibold">{g.name}</div>
-                    <div className="mt-1 text-xs text-[var(--color-ink)]/60">
-                      {g.publisher} · {g.releasedAt} 출시
+          <div className="mb-3 flex items-baseline justify-between">
+            <h2 className="text-base font-semibold text-[var(--color-ink)]">
+              지원 게임
+            </h2>
+            <span className="text-xs text-[var(--color-ink)]/60">
+              {GAMES.length}개
+            </span>
+          </div>
+          <ul className="grid gap-3 sm:grid-cols-2">
+            {GAMES.map((g) => {
+              // TODO(data-model): "예정" 문자열 매칭은 fragile. types.ts에
+              // status: "released" | "upcoming" 필드 추가되면 교체.
+              const upcoming = g.releasedAt.includes("예정");
+              // TODO(coupon-count): 만료 쿠폰 제외 로직 필요. CouponList의
+              // active/expired 분리 카운트와 불일치 가능. 현재 dokkaebi는 전부
+              // expiresAt=null이라 noop.
+              const couponCount = g.coupons.length;
+              return (
+                <li key={g.slug}>
+                  <Link
+                    href={`/${g.slug}/`}
+                    className="group flex h-full flex-col rounded-xl border border-[var(--color-border)] bg-white p-4 transition hover:border-[var(--color-brand)] hover:shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand)]"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <span
+                        aria-hidden="true"
+                        className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-[var(--color-bg)] text-base font-bold text-[var(--color-brand)]"
+                      >
+                        {g.name.charAt(0)}
+                      </span>
+                      {upcoming ? (
+                        <span className="inline-flex items-center rounded-full bg-[var(--color-accent)]/20 px-2 py-0.5 text-xs font-medium text-[var(--color-ink)]">
+                          출시 예정
+                        </span>
+                      ) : couponCount > 0 ? (
+                        <span className="inline-flex items-center rounded-full bg-[var(--color-brand)] px-2 py-0.5 text-xs font-medium text-white">
+                          쿠폰 {couponCount}개
+                        </span>
+                      ) : null}
                     </div>
-                  </div>
-                  <span className="text-[var(--color-brand)]">→</span>
-                </Link>
-              </li>
-            ))}
+                    <div className="mt-3">
+                      <div className="text-base font-semibold">{g.name}</div>
+                      <div className="mt-1 text-xs text-[var(--color-ink)]/60">
+                        {g.publisher} · {g.releasedAt} 출시
+                      </div>
+                    </div>
+                    <div className="mt-4 flex items-center justify-between text-sm text-[var(--color-brand)]">
+                      <span>계산기 · 쿠폰 보기</span>
+                      <span
+                        aria-hidden="true"
+                        className="transition-transform group-hover:translate-x-1"
+                      >
+                        →
+                      </span>
+                    </div>
+                  </Link>
+                </li>
+              );
+            })}
           </ul>
         </section>
 

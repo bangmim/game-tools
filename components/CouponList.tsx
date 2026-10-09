@@ -1,6 +1,26 @@
 import { CopyButton } from "./CopyButton";
 import type { Coupon } from "@/data/games/types";
 
+function ExternalLinkIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 16 16"
+      width="14"
+      height="14"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M9.5 2.5h4v4" />
+      <path d="M13.5 2.5 7 9" />
+      <path d="M12 9.5v3A1 1 0 0 1 11 13.5H3.5A1 1 0 0 1 2.5 12.5V5A1 1 0 0 1 3.5 4h3" />
+    </svg>
+  );
+}
+
 type Props = {
   coupons: Coupon[];
   couponUrl: string | null;
@@ -37,21 +57,17 @@ export function CouponList({ coupons, couponUrl }: Props) {
   if (coupons.length === 0) {
     return (
       <div className="rounded-xl border border-dashed border-[var(--color-border)] bg-white p-6 text-center text-sm text-[var(--color-ink)]/60">
-        아직 수집된 쿠폰이 없습니다.
+        <p>아직 수집된 쿠폰이 없습니다.</p>
         {couponUrl && (
-          <>
-            {" "}
-            공식 쿠폰 입력 페이지는{" "}
-            <a
-              href={couponUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-medium text-[var(--color-brand)] underline underline-offset-2"
-            >
-              여기
-            </a>
-            에서 확인하세요.
-          </>
+          <a
+            href={couponUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-1.5 rounded-md border-2 border-[var(--color-brand)] bg-white px-4 py-2 text-sm font-medium text-[var(--color-brand)] transition hover:bg-[var(--color-brand)] hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand)] sm:w-auto"
+          >
+            공식 쿠폰 입력 페이지로 이동
+            <ExternalLinkIcon />
+          </a>
         )}
       </div>
     );
@@ -66,9 +82,10 @@ export function CouponList({ coupons, couponUrl }: Props) {
           href={couponUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex rounded-md border border-[var(--color-brand)] bg-white px-4 py-2 text-sm font-medium text-[var(--color-brand)] hover:bg-[var(--color-brand)] hover:text-white"
+          className="inline-flex min-h-11 w-full items-center justify-center gap-1.5 rounded-md bg-[var(--color-brand)] px-4 py-2 text-sm font-medium text-white transition hover:bg-[var(--color-ink)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand)] sm:w-auto"
         >
-          공식 쿠폰 입력 페이지 →
+          공식 쿠폰 입력 페이지
+          <ExternalLinkIcon />
         </a>
       )}
 
@@ -102,6 +119,18 @@ export function CouponList({ coupons, couponUrl }: Props) {
               {!c.expiresAt && (
                 <div className="mt-1 text-xs text-[var(--color-ink)]/60">
                   기간 제한 없음
+                </div>
+              )}
+              {c.sourceUrl && (
+                <div className="mt-2 text-xs">
+                  <a
+                    href={c.sourceUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[var(--color-brand)]/80 underline-offset-2 hover:underline"
+                  >
+                    공식 출처 ↗
+                  </a>
                 </div>
               )}
             </li>

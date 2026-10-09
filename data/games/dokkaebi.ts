@@ -17,16 +17,25 @@ export const dokkaebi: Game = {
       code: "도깨비1008",
       reward: "꿀떡 무기 외형",
       expiresAt: null,
+      sourceUrl:
+        "https://forum.kakaogames.com/dokkaebi/postView/?code=notice&id=1019",
+      collectedAt: "2026-10-09",
     },
     {
       code: "애플1위풍악을울려라",
-      reward: "염색 선택 상자, 역전 111,111, 1위 기념 도술 선택 상자",
+      reward: "염색 선택 상자, 엽전 111,111, 1위 기념 도술 선택 상자",
       expiresAt: null,
+      sourceUrl:
+        "https://forum.kakaogames.com/dokkaebi/postView/?code=notice&id=9200",
+      collectedAt: "2026-10-09",
     },
     {
       code: "칭호나와라뚝딱",
-      reward: "칭호, 역전 100,000",
+      reward: "칭호, 엽전 100,000",
       expiresAt: null,
+      sourceUrl:
+        "https://forum.kakaogames.com/dokkaebi/postView/?code=notice&id=9112",
+      collectedAt: "2026-10-09",
     },
   ],
   keywords: [

@@ -5,6 +5,8 @@ import { GAMES, getGame } from "@/data/games";
 import { Disclaimer } from "@/components/Disclaimer";
 import { JsonLd } from "@/components/JsonLd";
 import { SITE_NAME, SITE_URL } from "@/lib/site";
+import { hasBeginnerChecklist } from "@/data/games/beginner";
+import { GameNavTab } from "./_components/GameNavTab";
 
 export function generateStaticParams() {
   return GAMES.map((g) => ({ game: g.slug }));
@@ -81,25 +83,17 @@ export default async function GameLayout({ params, children }: Props) {
           )}
         </header>
 
-        <div className="mb-6 flex gap-2 border-b border-[var(--color-border)]">
-          <TabLink href={`/${g.slug}/gacha/`}>뽑기 확률 계산기</TabLink>
-          <TabLink href={`/${g.slug}/coupon/`}>쿠폰 모음</TabLink>
+        <div className="mb-6 flex flex-wrap gap-2 border-b border-[var(--color-border)]">
+          <GameNavTab href={`/${g.slug}/gacha/`} label="뽑기 확률 계산기" />
+          <GameNavTab href={`/${g.slug}/coupon/`} label="쿠폰 모음" />
+          {hasBeginnerChecklist(g.slug) && (
+            <GameNavTab href={`/${g.slug}/beginner/`} label="초반 가이드" />
+          )}
         </div>
 
         {children}
       </main>
       <Disclaimer />
     </>
-  );
-}
-
-function TabLink({ href, children }: { href: string; children: React.ReactNode }) {
-  return (
-    <Link
-      href={href}
-      className="-mb-px border-b-2 border-transparent px-3 py-2 text-sm font-medium text-[var(--color-ink)]/70 transition hover:border-[var(--color-brand)] hover:text-[var(--color-brand)]"
-    >
-      {children}
-    </Link>
   );
 }
