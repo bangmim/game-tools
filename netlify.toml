@@ -10,6 +10,20 @@
 # Static export (output: 'export') — no @netlify/plugin-nextjs needed.
 # Netlify serves the `out/` directory as a plain static site.
 
+# Security headers (전역 적용)
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=(), interest-cohort=()"
+    Strict-Transport-Security = "max-age=63072000; includeSubDomains; preload"
+    # CSP: Next.js app router inline hydration script 때문에 'unsafe-inline' 필요.
+    # Pretendard는 cdn.jsdelivr.net font-src에만 허용. 다른 외부 리소스 없음.
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self' https://cdn.jsdelivr.net; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests"
+
+# Cache: HTML (short) / 정적 자산 (immutable)
 [[headers]]
   for = "/*.html"
   [headers.values]

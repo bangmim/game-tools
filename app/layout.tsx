@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { JsonLd } from "@/components/JsonLd";
 import {
   DEFAULT_KEYWORDS,
   SITE_DESCRIPTION,
@@ -32,17 +33,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="ko" className="antialiased">
       <body className="min-h-screen flex flex-col">
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              "@context": "https://schema.org",
-              "@type": "WebSite",
-              name: SITE_NAME,
-              url: SITE_URL,
-              description: SITE_DESCRIPTION,
-              inLanguage: "ko-KR",
-            }),
+        <JsonLd
+          data={{
+            "@context": "https://schema.org",
+            "@type": "WebSite",
+            name: SITE_NAME,
+            url: SITE_URL,
+            description: SITE_DESCRIPTION,
+            inLanguage: "ko-KR",
           }}
         />
         {children}
