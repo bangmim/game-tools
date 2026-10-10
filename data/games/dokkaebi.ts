@@ -14,6 +14,34 @@ export const dokkaebi: Game = {
   triesPresets: [10, 30, 50, 100],
   coupons: [
     {
+      code: "도깨비의다짐",
+      reward: "가호 주머니 (귀속) 20개, 엽전 1,000,000개, 희귀 가호의 정수 (귀속) 100개 (공식 공지 참조)",
+      expiresAt: null,
+      sourceUrl: "https://forum.kakaogames.com/dokkaebi/postView/?code=notice&id=12167",
+      collectedAt: "2026-10-10",
+    },
+    {
+      code: "도깨비의약속",
+      reward: "1위 도술 조각 선택 상자 (귀속) 3개, 요혼석 (귀속) 100개 (공식 공지 참조)",
+      expiresAt: null,
+      sourceUrl: "https://forum.kakaogames.com/dokkaebi/postView/?code=notice&id=12167",
+      collectedAt: "2026-10-10",
+    },
+    {
+      code: "도깨비의마음",
+      reward: "요혼석 (귀속) 200개, 도전자의 희귀 장신구 선택 상자 (귀속) 1개, 희귀 무기 선택 상자 (귀속) 1개 (공식 공지 참조)",
+      expiresAt: null,
+      sourceUrl: "https://forum.kakaogames.com/dokkaebi/postView/?code=notice&id=12167",
+      collectedAt: "2026-10-10",
+    },
+    {
+      code: "구글1위잔치로구나",
+      reward: "염색약 선택 상자 (귀속) 1개 (공식 공지 참조)",
+      expiresAt: null,
+      sourceUrl: "https://forum.kakaogames.com/dokkaebi/postView/?code=notice&id=10503",
+      collectedAt: "2026-10-10",
+    },
+    {
       code: "도깨비1008",
       reward: "꿀떡 무기 외형",
       expiresAt: null,
