@@ -10,6 +10,7 @@
 - [x] 지난 세션 결정 반영 커밋 (`da2b40b` docs/plan-md-cleanup) — 완료.
 - [x] 쿠폰 자동 수집 CI (도깨비 전용) — 이번 세션. Playwright headless + GAMES 레지스트리 기반, `data/games/types.ts`에 `ScrapeConfig` optional 필드 추가, `data/games/dokkaebi.ts`에만 `scrapeEnabled: true`. workflow가 매일 UTC 00:00(KST 09:00) 돌면서 신규 쿠폰이 있으면 `feat(scrape):` 커밋으로 develop에 직접 push. main↔develop diff에 `feat(scrape):` 커밋이 10개 이상 쌓이면 `release-reminder` 라벨 Issue 자동 생성 (open 상태 중복 방지). 수동 트리거(workflow_dispatch)도 지원.
 - [ ] 지원 게임 1~2개 추가 (다음 작업).
+- [x] 이클립스 skeleton 등재 — Playwright 리서치는 다음 세션(공식 사이트·공시·쿠폰 URL·releasedAt 채우기)
 
 ## 미확정 사항
 - [ ] `develop → main` 머지 주기·트리거 기준 구체화 (요일 고정? 쿠폰 N개 쌓이면? docs-only는 묶음 대기?)
@@ -17,6 +18,7 @@
 - [ ] AdSense 신청 기준 수치화 (일 유입 N명/일, 추가 페이지 M개 이후 등)
 - [ ] Netlify Analytics vs GA / PostHog 도입 시점·수단 선정 (AdSense 신청 전 유입 측정 필요)
 - [ ] 다음 세션에 추가할 지원 게임 후보 선정 — 제우스 / 이클립스 / 나혼자만 레벨업 카르마 중 어느 쪽을 먼저 올릴지. 공식 공지 접근성(SPA 여부·쿠폰 공지 패턴 유사성)과 신작 유입 기대치가 선정 기준.
+- [ ] 이클립스 공식 사이트·확률 공시·쿠폰 입력 URL·releasedAt 리서치 — Playwright 또는 사용자 수동. 비어 있는 /eclipse/gacha/, /eclipse/coupon/ 페이지는 그 때까지 "공식 공지 확인되는 대로 반영" 상태로 노출.
 
 ## 결정 기록
 - 2026-10-09 · 브랜치 모델을 `main` 직접 push → `feat/* → develop → main` 로 전환. Netlify 배포 트리거는 `main` 유지. (HANDOFF.md §7.8, 커밋 `d37b0d3`, 머지 `ce7361a`)
