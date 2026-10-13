@@ -37,6 +37,7 @@ yarn-error.log*
 # netlify
 .netlify/
 .agents/
+.playwright-mcp/
 
 # typescript
 *.tsbuildinfo
