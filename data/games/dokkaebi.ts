@@ -14,6 +14,13 @@ export const dokkaebi: Game = {
   triesPresets: [10, 30, 50, 100],
   coupons: [
     {
+      code: "도깨비의내일",
+      reward: "- 구성품: 산척의 방어구 도안 선택 상자 (귀속) 1개 + 기운 발현 재료 선택 상자 (귀속) 50개 + 레이드 추가 티켓 (귀속) 1개 + 영기 수련 가속권 (10분)(귀속) 6개 + 3단계 체력 회복 물약 (귀속) 100개 (공식 공지 참조)",
+      expiresAt: null,
+      sourceUrl: "https://forum.kakaogames.com/dokkaebi/postView/?code=notice&id=13991",
+      collectedAt: "2026-10-14",
+    },
+    {
       code: "매출1위감사합니다",
       reward: "- 구성품: 의복 랜덤 열쇠 (귀속) 1개 + 단일 염색약 선택 상자 (귀속) 11개 + 요혼석 (귀속) 1,111개 + 엽전 1,111,111개 (공식 공지 참조)",
       expiresAt: null,
