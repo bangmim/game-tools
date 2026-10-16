@@ -19,7 +19,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const g = getGame(game);
   if (!g) return {};
   const title = `${g.name} 뽑기 확률 계산기`;
-  const description = `${g.name} 뽑기 확률을 1개 이상 나올 확률, 평균 획득 개수, 50·90·99% 목표에 도달하는 데 필요한 횟수로 계산합니다. 천장과 1회 비용도 반영.`;
+  const description = `${g.name} 뽑기 확률을 1개 이상 나올 확률, 천장 없는 평균 획득 개수, 50·90·99% 목표에 필요한 횟수로 계산합니다. 천장은 첫 획득 보장만 반영하며 1회 비용도 계산합니다.`;
   return {
     title,
     description,
@@ -112,7 +112,7 @@ export default async function GachaPage({ params }: Props) {
           },
           {
             q: "천장은 뭘 뜻하나요?",
-            a: "지정된 횟수까지 못 뽑으면 확정으로 지급되는 보장 횟수입니다. 입력하면 결과 횟수가 천장 이상이 될 때 100% 확률로 처리되고, 목표 확률에 필요한 횟수도 천장을 넘지 않도록 제한됩니다.",
+            a: "첫 획득까지 지정된 횟수에서 확정 지급되는 단순 보장 모델입니다. 획득 후 초기화·이월 규칙은 반영하지 않으며 천장 적용 시 평균 획득 개수는 계산하지 않습니다. 입력하면 결과 횟수가 천장 이상이 될 때 100% 확률로 처리되고, 목표 확률에 필요한 횟수도 천장을 넘지 않도록 제한됩니다.",
           },
           {
             q: "1회 비용을 넣으면 뭐가 바뀌나요?",

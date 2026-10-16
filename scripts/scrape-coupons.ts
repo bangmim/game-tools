@@ -8,7 +8,7 @@
  *   · 공식 공지에서만 수집한다.
  *   · 각 쿠폰에 sourceUrl + collectedAt 명시.
  *   · reward는 공지 원문 복사 금지 — 자체 요약 placeholder만 넣고
- *     사용자가 손으로 다듬도록 TODO 플래그 (`__TODO__ reward`) 포함.
+ *     사용자가 손으로 요약하도록 고정 안내 문구만 저장.
  *
  * 사용:
  *   pnpm run scrape:coupons        # 기본: 실제 파일 수정
@@ -19,7 +19,7 @@
 import { chromium, type Page } from "playwright";
 import { readFileSync, writeFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
-import { fileURLToPath } from "node:url";
+import { pathToFileURL, fileURLToPath } from "node:url";
 
 import { GAMES } from "../data/games";
 import type { Game, Coupon, ScrapeConfig } from "../data/games/types";
@@ -49,8 +49,29 @@ type ExtractedCoupon = {
   publishedAt: string | null;
 };
 
-function sleep(ms: number) {
-  return new Promise((r) => setTimeout(r, ms));
+// Verified against the official forum DOM on 2026-10-16. Comments are siblings,
+// never descendants of the official article body.
+export const NOTICE_BODY = ".board-view__body";
+export const NOTICE_LINKS = "a.board__link";
+
+export function assertNoticeUrl(raw: string, listUrl: string, detail = true): string {
+  const url = new URL(raw, listUrl);
+  const list = new URL(listUrl);
+  const path = list.pathname.replace(/postList\/?$/, detail ? "postView/" : "postList/");
+  if (list.origin !== "https://forum.kakaogames.com" || list.searchParams.get("code") !== "notice"
+    || !/\/postList\/$/.test(list.pathname) || url.origin !== list.origin
+    || url.pathname !== path || url.searchParams.get("code") !== "notice"
+    || (detail && !/^\d+$/.test(url.searchParams.get("id") ?? "")) || url.username || url.password) {
+    throw new Error(`Not an official notice URL: ${raw}`);
+  }
+  return url.href;
+}
+
+async function navigateNotice(page: Page, url: string, listUrl: string, detail: boolean) {
+  assertNoticeUrl(url, listUrl, detail);
+  const response = await page.goto(url, { waitUntil: "domcontentloaded", timeout: 20000 });
+  if (!response || !response.ok()) throw new Error(`Notice HTTP failure: ${response?.status() ?? "no response"} ${url}`);
+  assertNoticeUrl(page.url(), listUrl, detail);
 }
 
 function uniqByCode<T extends { code: string }>(arr: T[]): T[] {
@@ -68,7 +89,7 @@ function uniqByCode<T extends { code: string }>(arr: T[]): T[] {
  * 공지 본문 텍스트에서 쿠폰 코드 후보를 뽑는다.
  * 반환되는 code는 CODE_TOKEN을 통과한 것만.
  */
-function extractCouponsFromBody(body: string): { code: string; rewardHint: string }[] {
+export function extractCouponsFromBody(body: string): { code: string; rewardHint: string }[] {
   const results: { code: string; rewardHint: string }[] = [];
   // 패턴 A/C는 raw body에 적용 (문자열 전역 regex)
   // 패턴 B는 blank line 제거 후 라인 블록 scan
@@ -118,45 +139,36 @@ function extractPublishedAt(body: string): string | null {
 }
 
 /** 공지 리스트에서 쿠폰 공지 URL 목록을 가져온다. */
-async function collectNoticeUrls(page: Page, cfg: ScrapeConfig): Promise<{ title: string; url: string }[]> {
-  await page.goto(cfg.noticeListUrl, { waitUntil: "domcontentloaded", timeout: 20000 });
-  await sleep(3500); // SPA 렌더 대기
-
-  const links = await page.$$eval("a", (as: HTMLAnchorElement[]) =>
-    as.map((a) => ({ text: a.textContent?.trim() || "", href: a.href })),
+export async function collectNoticeUrls(page: Page, cfg: ScrapeConfig): Promise<{ title: string; url: string }[]> {
+  await navigateNotice(page, cfg.noticeListUrl, cfg.noticeListUrl, false);
+  await page.locator(NOTICE_LINKS).first().waitFor({ state: "visible", timeout: 20000 });
+  const links = await page.locator(NOTICE_LINKS).evaluateAll((as) =>
+    as.map((a) => ({ text: a.querySelector(".text")?.textContent?.trim() || "", href: (a as HTMLAnchorElement).href })),
   );
-  const kws = cfg.titleKeywords;
-  const filtered = links.filter(
-    (l) =>
-      l.text &&
-      /postView/.test(l.href) &&
-      /code=notice/.test(l.href) &&
-      kws.some((kw) => l.text.includes(kw)),
-  );
-  // dedupe by url
+  if (links.length === 0) throw new Error("Notice list did not load");
   const seen = new Set<string>();
   const out: { title: string; url: string }[] = [];
-  for (const l of filtered) {
-    if (seen.has(l.href)) continue;
-    seen.add(l.href);
-    out.push({ title: l.text, url: l.href });
+  for (const link of links) {
+    // Reject unexpected links even when their title does not match keywords.
+    const url = assertNoticeUrl(link.href, cfg.noticeListUrl);
+    if (!link.text) throw new Error("Notice title did not load");
+    if (!cfg.titleKeywords.some((kw) => link.text.includes(kw)) || seen.has(url)) continue;
+    seen.add(url);
+    out.push({ title: link.text, url });
   }
   return out;
 }
 
-/** 공지 상세에서 쿠폰 추출. */
-async function scrapeDetail(page: Page, url: string): Promise<ExtractedCoupon[]> {
-  await page.goto(url, { waitUntil: "domcontentloaded", timeout: 20000 });
-  await sleep(3500);
-  const body = await page.evaluate(() => document.body.innerText);
-  const publishedAt = extractPublishedAt(body);
-  const raw = extractCouponsFromBody(body);
-  return raw.map((r) => ({
-    code: r.code,
-    rewardHint: r.rewardHint,
-    sourceUrl: url,
-    publishedAt,
-  }));
+/** Read ONLY the official article body, never document.body or comments. */
+export async function scrapeDetail(page: Page, url: string, listUrl: string): Promise<ExtractedCoupon[]> {
+  await navigateNotice(page, url, listUrl, true);
+  const article = page.locator(NOTICE_BODY);
+  await article.waitFor({ state: "visible", timeout: 20000 });
+  const body = await article.innerText();
+  const date = await page.locator(".board-view__head .date").innerText({ timeout: 20000 });
+  if (!body.trim() || !extractPublishedAt(date)) throw new Error(`Notice content did not load: ${url}`);
+  const publishedAt = extractPublishedAt(date);
+  return extractCouponsFromBody(body).map((r) => ({ ...r, sourceUrl: url, publishedAt }));
 }
 
 /**
@@ -191,7 +203,7 @@ function gameFilePath(slug: string): string {
   return resolve(REPO_ROOT, "data", "games", `${slug}.ts`);
 }
 
-async function scrapeOne(page: Page, game: Game): Promise<Coupon[]> {
+export async function scrapeOne(page: Page, game: Game): Promise<Coupon[]> {
   const cfg = game.scrape;
   if (!cfg || !cfg.scrapeEnabled) {
     console.log(`[skip] ${game.slug}: scrape disabled`);
@@ -203,18 +215,10 @@ async function scrapeOne(page: Page, game: Game): Promise<Coupon[]> {
 
   const extracted: ExtractedCoupon[] = [];
   for (const n of notices) {
-    try {
-      const list = await scrapeDetail(page, n.url);
-      if (list.length > 0) {
-        console.log(`  - ${n.title}`);
-        for (const c of list) {
-          console.log(`      · code=${c.code}  rewardHint="${c.rewardHint}"`);
-        }
-      }
-      extracted.push(...list);
-    } catch (e) {
-      console.warn(`  ! 공지 로드 실패: ${n.url} — ${(e as Error).message}`);
-    }
+    // Any failed detail aborts the entire collection; never write partial results.
+    const list = await scrapeDetail(page, n.url, cfg.noticeListUrl);
+    if (list.length > 0) console.log(`  - ${n.title}: ${list.map((c) => c.code).join(", ")}`);
+    extracted.push(...list);
   }
   const uniq = uniqByCode(extracted);
   const existingCodes = new Set(game.coupons.map((c) => c.code));
@@ -227,9 +231,7 @@ async function scrapeOne(page: Page, game: Game): Promise<Coupon[]> {
     .map((e) => ({
       code: e.code,
       // reward: 공지 원문 복사 금지 — 자체 요약 placeholder. 사용자가 손으로 다듬음.
-      reward: e.rewardHint
-        ? `${e.rewardHint} (공식 공지 참조)`
-        : "공식 공지 참조",
+      reward: "공식 공지에서 보상 확인",
       expiresAt: null,
       sourceUrl: e.sourceUrl,
       collectedAt: today,
@@ -241,39 +243,30 @@ async function scrapeOne(page: Page, game: Game): Promise<Coupon[]> {
   return newOnes;
 }
 
-async function main() {
+export async function main(dryRun = DRY_RUN) {
   const browser = await chromium.launch({ headless: true });
-  const context = await browser.newContext({
-    userAgent:
-      "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36",
-    locale: "ko-KR",
-  });
-  const page = await context.newPage();
-
-  let totalNew = 0;
-  for (const game of GAMES) {
-    try {
-      const newCoupons = await scrapeOne(page, game);
-      if (newCoupons.length === 0) continue;
-      totalNew += newCoupons.length;
-      if (DRY_RUN) {
-        console.log(`[dry-run] ${game.slug}: ${newCoupons.length}건 신규 (파일 수정 skip)`);
-        for (const c of newCoupons) console.log("  ", JSON.stringify(c));
-      } else {
-        appendCouponsToFile(gameFilePath(game.slug), newCoupons);
-        console.log(`[write] ${game.slug}: ${newCoupons.length}건 레코드 삽입`);
-      }
-    } catch (e) {
-      console.error(`[error] ${game.slug}:`, (e as Error).message);
-      throw e;
+  try {
+    const context = await browser.newContext({ locale: "ko-KR" });
+    const page = await context.newPage();
+    const pending: { game: Game; coupons: Coupon[] }[] = [];
+    // Complete every network read before any data file is changed.
+    for (const game of GAMES) {
+      const coupons = await scrapeOne(page, game);
+      if (coupons.length) pending.push({ game, coupons });
     }
+    for (const { game, coupons } of pending) {
+      if (dryRun) console.log(`[dry-run] ${game.slug}: ${coupons.length}건 신규 (파일 수정 skip)`, coupons);
+      else appendCouponsToFile(gameFilePath(game.slug), coupons);
+    }
+    console.log(`총 ${pending.reduce((n, p) => n + p.coupons.length, 0)}건 신규 쿠폰 ${dryRun ? "(dry-run)" : "반영"}`);
+  } finally {
+    await browser.close();
   }
-
-  await browser.close();
-  console.log(`\n=== 결과: 총 ${totalNew}건 신규 쿠폰 ${DRY_RUN ? "(dry-run)" : "반영"} ===`);
 }
 
-main().catch((e) => {
-  console.error("[fatal]", e);
-  process.exit(1);
-});
+if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
+  main().catch((e) => {
+    console.error("[fatal]", e);
+    process.exitCode = 1;
+  });
+}

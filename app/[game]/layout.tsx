@@ -31,6 +31,7 @@ export async function generateMetadata({
     title,
     description,
     keywords: g.keywords,
+    robots: g.indexable ? undefined : { index: false, follow: true },
     alternates: { canonical: `/${g.slug}/` },
     openGraph: {
       title: `${title} — ${SITE_NAME}`,

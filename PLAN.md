@@ -7,6 +7,12 @@
 도깨비 공식 공지 쿠폰을 매일 자동 수집해 develop에 반영하는 CI를 돌리고, 이어서 지원 게임 1~2개를 추가해 사이트 폭을 넓힌다.
 
 ## 범위
+- [x] 2026-10-16 승인: 수집기를 공식 본문 선택자로 제한해 댓글 제외, HTTP·SPA 로딩·공식 URL 검증 및 실패 시 기록 중단. 회귀 테스트와 읽기 전용 dry 검증. 배포 일정 유지.
+
+- [x] 2026-10-15 승인: 공식 종합 공지 기준 쿠폰 기한·확인일·자체 요약 보상 정정, 미확인/무기한 구분 및 브라우저 만료 갱신.
+- [x] 자동 수집 보상은 원문 대신 공식 공지 확인 안내만 저장. 계산기 천장·확률 경계값 수정과 검증.
+- [x] 준비 중 게임은 noindex 및 사이트맵 제외. GA4 운영 사실 문서 반영. 배포 일정·10건 알림·워크플로는 기존 유지.
+
 - [x] 지난 세션 결정 반영 커밋 (`da2b40b` docs/plan-md-cleanup) — 완료.
 - [x] 쿠폰 자동 수집 CI (도깨비 전용) — 이번 세션. Playwright headless + GAMES 레지스트리 기반, `data/games/types.ts`에 `ScrapeConfig` optional 필드 추가, `data/games/dokkaebi.ts`에만 `scrapeEnabled: true`. workflow가 매일 UTC 00:00(KST 09:00) 돌면서 신규 쿠폰이 있으면 `feat(scrape):` 커밋으로 develop에 직접 push. main↔develop diff에 `feat(scrape):` 커밋이 10개 이상 쌓이면 `release-reminder` 라벨 Issue 자동 생성 (open 상태 중복 방지). 수동 트리거(workflow_dispatch)도 지원.
 - [ ] 지원 게임 1~2개 추가 (다음 작업).
@@ -16,7 +22,7 @@
 - [ ] `develop → main` 머지 주기·트리거 기준 구체화 (요일 고정? 쿠폰 N개 쌓이면? docs-only는 묶음 대기?)
       → 쿠폰 자동 수집 CI는 "10건 쌓이면 Issue"로 release 트리거 알림을 자동화했지만, docs/feat 혼합분을 어느 주기로 묶을지는 여전히 미결.
 - [ ] AdSense 신청 기준 수치화 (일 유입 N명/일, 추가 페이지 M개 이후 등)
-- [ ] Netlify Analytics vs GA / PostHog 도입 시점·수단 선정 (AdSense 신청 전 유입 측정 필요)
+- [x] GA4 사용 중 — 2026-10-15 사용자 화면에서 28일 사용자 4명·페이지 조회 21회 수집 확인.
 - [ ] 다음 세션에 추가할 지원 게임 후보 선정 — 제우스 / 이클립스 / 나혼자만 레벨업 카르마 중 어느 쪽을 먼저 올릴지. 공식 공지 접근성(SPA 여부·쿠폰 공지 패턴 유사성)과 신작 유입 기대치가 선정 기준.
 - [ ] 이클립스 공식 사이트·확률 공시·쿠폰 입력 URL·releasedAt 리서치 — Playwright 또는 사용자 수동. 비어 있는 /eclipse/gacha/, /eclipse/coupon/ 페이지는 그 때까지 "공식 공지 확인되는 대로 반영" 상태로 노출.
 
@@ -29,3 +35,9 @@
 - 2026-10-10 · SPA 공식 공지 수집용 Playwright 도입 완료 — `scripts/scrape-coupons.ts` + GitHub Actions `scrape-coupons.yml`. 추출은 **정규식 + CSS selector만** (LLM 사용 금지, HANDOFF §7.3 hallucination 방지). 대상은 `scrapeEnabled: true` Game만, 현재는 도깨비 하나. reward 필드는 공지 원문 복사 금지 원칙에 따라 "힌트 토큰 + (공식 공지 참조)" placeholder만 자동 삽입하고, 사용자가 손으로 다듬는다.
 - 2026-10-10 · 플래그 쿠폰 `구글1위잔치로구나` 공식 포럼에서 확인됨 (`forum.kakaogames.com/dokkaebi/postView/?code=notice&id=10503`, "구글 플레이 스토어 인기 1위 기념 특별 쿠폰 안내", 2026-10-08 발행). 다음 CI 실행 시 자동 수집된다. 로컬 dry-run 결과 그 외에도 `도깨비의다짐 / 도깨비의약속 / 도깨비의마음` 3건(id=12167 "10/9 라이브 방송 종합 안내 및 감사 쿠폰 안내")도 함께 추출됨 — 모두 공식 공지 교차검증 완료.
 - 2026-10-10 · 자동 수집 커밋과 수동 추가 커밋을 구분하기 위해 CI 커밋 메시지 prefix를 `feat(scrape):`로 고정. main↔develop diff에서 이 prefix 커밋만 세어 10건 이상이면 `release-reminder` Issue 생성. 릴리스는 사용자가 메인 세션에서 `/cnp --release`로 수동 실행 (CI는 release 안 함).
+
+- 2026-10-15 · 사용자가 권장 품질 수정을 승인. 배포일자는 기존대로 유지하며 커밋·푸시·배포는 별도 승인 전 실행하지 않는다. 공식 종합 쿠폰 공지(id=13991)에서 기한과 무기한 여부 확인 완료, 기존 null 유지 결정을 대체한다.
+
+- 2026-10-15 검증: 회귀 테스트 7건·TypeScript·ESLint·프로덕션 빌드 통과. 준비 중 게임의 noindex와 사이트맵 제외 확인. 배포·워크플로 변경 없음.
+
+- 2026-10-16 · 수집 안전성 회귀 테스트 4건 추가(댓글 제외·HTTP/로딩 실패·URL 검증·상세 실패 중단). 공식 공지 DOM을 CUA로 확인 후 `pnpm run scrape:coupons --dry` 성공: 공지 1건, 쿠폰 9건, 신규 0건, 파일 변경 없음. 배포 설정 유지.
