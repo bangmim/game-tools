@@ -26,6 +26,12 @@ export function GachaCalculator({ ratePresets, triesPresets }: Props) {
   const [pity, setPity] = useState<number | "">("");
   const [cost, setCost] = useState<number | "">("");
 
+  const hasPity = typeof pity === "number" && Number.isFinite(pity) && pity >= 1;
+  const valid = Number.isFinite(rate) && rate >= 0 && rate <= 100
+    && Number.isSafeInteger(tries) && tries >= 0
+    && (pity === "" || (Number.isSafeInteger(pity) && pity >= 1))
+    && (cost === "" || (Number.isFinite(cost) && cost >= 0));
+
   const result = useMemo(
     () =>
       gacha({
@@ -79,12 +85,12 @@ export function GachaCalculator({ ratePresets, triesPresets }: Props) {
           />
         </Field>
 
-        <Field label="천장 (선택, 몇 회에서 100% 보장)">
+        <Field label="천장 (선택, 첫 획득 보장 횟수)">
           <input
             type="number"
             inputMode="numeric"
             step="1"
-            min={0}
+            min={1}
             value={pity}
             onChange={(e) =>
               setPity(e.target.value === "" ? "" : Number(e.target.value))
@@ -112,6 +118,8 @@ export function GachaCalculator({ ratePresets, triesPresets }: Props) {
 
       <div className="mt-6 border-t border-[var(--color-border)] pt-5">
         <h2 className="text-lg font-semibold">결과</h2>
+        {!valid && <p role="alert" className="mt-3 text-sm text-red-600">확률은 0~100%, 횟수는 0 이상의 정수, 천장은 1 이상의 정수, 비용은 0 이상의 수를 입력하세요.</p>}
+        {valid && <>
 
         <div className="mt-3 overflow-hidden rounded-xl bg-gradient-to-br from-[var(--color-brand)] to-[#4958db] p-6 text-white">
           <div className="text-xs tracking-wider text-white/80">
@@ -127,10 +135,10 @@ export function GachaCalculator({ ratePresets, triesPresets }: Props) {
             label={`${tries}회에서 한 번도 안 나올 확률`}
             value={formatPercent(result.none)}
           />
-          <Stat
-            label="평균 획득 개수 (기댓값)"
+          {!hasPity && <Stat
+            label="평균 획득 개수 (천장 없는 독립 시행)"
             value={result.expected.toFixed(2)}
-          />
+          />}
           {typeof cost === "number" && cost > 0 && (
             <Stat
               label={`${tries}회 비용`}
@@ -139,6 +147,7 @@ export function GachaCalculator({ ratePresets, triesPresets }: Props) {
           )}
         </div>
 
+        {hasPity && <p className="mt-3 text-xs text-[var(--color-ink)]/70">천장은 첫 획득까지의 보장 횟수로 계산합니다. 획득 후 초기화·이월 규칙은 반영하지 않으며, 천장 적용 시 평균 획득 개수는 계산하지 않습니다.</p>}
         <div className="mt-5">
           <h3 className="text-sm font-semibold text-[var(--color-ink)]/80">
             목표 확률에 도달하려면
@@ -176,6 +185,7 @@ export function GachaCalculator({ ratePresets, triesPresets }: Props) {
             </table>
           </div>
         </div>
+        </>}
       </div>
     </div>
   );

@@ -17,6 +17,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     },
   ];
   for (const g of GAMES) {
+    if (!g.indexable) continue;
     base.push(
       {
         url: `${SITE_URL}/${g.slug}/`,

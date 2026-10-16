@@ -1,6 +1,7 @@
 import type { Game } from "./types";
 
 export const eclipse: Game = {
+  indexable: false,
   slug: "eclipse",
   name: "이클립스: 더 어웨이크닝",
   publisher: "스마일게이트",

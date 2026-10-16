@@ -2,6 +2,9 @@ export type Coupon = {
   code: string;
   reward: string;
   expiresAt: string | null;
+  /** null 기한 중 공식 무기한 확인 여부. 미설정은 기한 미확인. */
+  unlimited?: boolean;
+  verifiedAt?: string;
   /** 공식 공지 URL. 분쟁 시 입증 자료. null = 아직 운영자 확인 필요. */
   sourceUrl?: string | null;
   /** 수집일 YYYY-MM-DD. null = 아직 운영자 확인 필요. */
@@ -34,6 +37,8 @@ export type ScrapeConfig = {
 };
 
 export type Game = {
+  /** 공식 콘텐츠 준비 전에는 검색 색인에서 제외한다. */
+  indexable: boolean;
   slug: string;
   name: string;
   publisher: string;
