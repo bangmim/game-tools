@@ -347,7 +347,7 @@ c835862  chore: scaffold Next.js 16 game-tools with dokkaebi stub
 ### 🔧 기술 백로그 (급하지 않음)
 - [ ] HSTS 2년 설정 반영 재시도 (Netlify가 1년으로 조정됨 — 보안엔 영향 없음)
 - [ ] Pretendard self-host 또는 SRI 해시 추가 (현재 CDN 로드)
-- [ ] Netlify Analytics 또는 GA/PostHog 도입 (유입 측정 필요해지면)
+- [x] GA4 도입 및 수집 확인 (2026-10-16 상태 정정). 운영·분석 점검은 별도로 진행하며 배포 일정은 기존 유지.
 
 ---
 

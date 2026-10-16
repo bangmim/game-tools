@@ -4,6 +4,7 @@ import { GAMES, getGame } from "@/data/games";
 import { GachaCalculator } from "@/components/GachaCalculator";
 import { Faq } from "@/components/Faq";
 import { JsonLd } from "@/components/JsonLd";
+import { gacha } from "@/lib/gacha";
 import { SITE_NAME, SITE_URL } from "@/lib/site";
 
 export function generateStaticParams() {
@@ -37,6 +38,8 @@ export default async function GachaPage({ params }: Props) {
   const { game } = await params;
   const g = getGame(game);
   if (!g) notFound();
+
+  const example = gacha({ ratePercent: 1, tries: 100 });
 
   const webApp = {
     "@context": "https://schema.org",
@@ -102,6 +105,21 @@ export default async function GachaPage({ params }: Props) {
         ratePresets={g.ratePresets}
         triesPresets={g.triesPresets}
       />
+
+      <section className="mt-6 rounded-xl border border-[var(--color-border)] bg-white p-5 text-sm leading-relaxed">
+        <h2 className="font-semibold">계산 결과 읽기: 가상 확률 1%로 100회 뽑는다면</h2>
+        <p className="mt-2 text-xs text-[var(--color-ink)]/60">게임의 공식 확률이 아닌 설명용 예시입니다. 매회 확률이 같고 서로 독립이며 천장은 없다고 가정합니다. 위 입력값과 별개입니다.</p>
+        <dl className="mt-3 grid grid-cols-2 gap-3 rounded-lg bg-[var(--color-bg)] p-3">
+          <div><dt className="text-xs text-[var(--color-ink)]/60">1개 이상 획득</dt><dd className="font-semibold">{(example.atLeastOne * 100).toFixed(2)}%</dd></div>
+          <div><dt className="text-xs text-[var(--color-ink)]/60">한 번도 획득하지 못함</dt><dd className="font-semibold">{(example.none * 100).toFixed(2)}%</dd></div>
+        </dl>
+        <p className="mt-3">평균 획득 개수는 {example.expected.toFixed(0)}개지만, 100회마다 반드시 1개를 받는다는 뜻은 아닙니다. 같은 조건의 뽑기를 여러 번 반복했을 때 획득 개수의 평균이며, 한 번의 100회에서는 0개 또는 여러 개가 나올 수 있습니다.</p>
+        <p className="mt-3">최소 1개 획득할 목표 확률에 필요한 횟수는 다음과 같습니다. 이 횟수도 확정 지급을 뜻하지 않습니다.</p>
+        <ul className="mt-2 flex flex-wrap gap-x-5 gap-y-1">
+          {[0.5, 0.9, 0.99].map((target) => <li key={target}>{target * 100}%: <b>{example.needForTarget(target)}회</b></li>)}
+        </ul>
+        <p className="mt-3 text-[var(--color-ink)]/80">천장을 입력하면 첫 획득까지의 보장만 계산합니다. 획득 후 천장 초기화나 이월은 반영하지 않으므로 평균 획득 개수는 표시하지 않습니다. 실제 적용 전 게임의 공식 확률과 천장 규칙을 확인하세요.</p>
+      </section>
 
       <Faq
         title="자주 묻는 질문"
