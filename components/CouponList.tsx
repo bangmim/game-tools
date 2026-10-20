@@ -1,3 +1,7 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { splitCoupons, formatExpiry } from "@/lib/coupons";
 import { CopyButton } from "./CopyButton";
 import type { Coupon } from "@/data/games/types";
 
@@ -26,34 +30,22 @@ type Props = {
   couponUrl: string | null;
 };
 
-function daysLeft(expiresAt: string | null): number | null {
-  if (!expiresAt) return null;
-  const expiry = new Date(expiresAt).getTime();
-  const now = Date.now();
-  const diff = Math.ceil((expiry - now) / (1000 * 60 * 60 * 24));
-  return diff;
-}
-
-function sortCoupons(coupons: Coupon[]): { active: Coupon[]; expired: Coupon[] } {
-  const now = Date.now();
-  const active: Coupon[] = [];
-  const expired: Coupon[] = [];
-  for (const c of coupons) {
-    if (c.expiresAt && new Date(c.expiresAt).getTime() < now) {
-      expired.push(c);
-    } else {
-      active.push(c);
-    }
-  }
-  active.sort((a, b) => {
-    if (!a.expiresAt) return 1;
-    if (!b.expiresAt) return -1;
-    return new Date(a.expiresAt).getTime() - new Date(b.expiresAt).getTime();
-  });
-  return { active, expired };
-}
-
 export function CouponList({ coupons, couponUrl }: Props) {
+  // The initial render is identical on the server and browser. Refresh after hydration,
+  // on tab return, and every minute so a static deployment can expire coupons.
+  const [now, setNow] = useState<number | null>(null);
+  useEffect(() => {
+    const refresh = () => setNow(Date.now());
+    refresh();
+    const timer = window.setInterval(refresh, 60_000);
+    window.addEventListener("focus", refresh);
+    document.addEventListener("visibilitychange", refresh);
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener("focus", refresh);
+      document.removeEventListener("visibilitychange", refresh);
+    };
+  }, []);
   if (coupons.length === 0) {
     return (
       <div className="rounded-xl border border-dashed border-[var(--color-border)] bg-white p-6 text-center text-sm text-[var(--color-ink)]/60">
@@ -73,7 +65,7 @@ export function CouponList({ coupons, couponUrl }: Props) {
     );
   }
 
-  const { active, expired } = sortCoupons(coupons);
+  const { active, expired } = splitCoupons(coupons, now ?? 0);
 
   return (
     <div className="space-y-6">
@@ -91,7 +83,8 @@ export function CouponList({ coupons, couponUrl }: Props) {
 
       <ul className="space-y-3">
         {active.map((c) => {
-          const left = daysLeft(c.expiresAt);
+          const left = c.expiresAt && now !== null
+            ? Math.ceil((Date.parse(c.expiresAt) - now) / 86_400_000) : null;
           const urgent = left !== null && left <= 3;
           return (
             <li
@@ -102,7 +95,7 @@ export function CouponList({ coupons, couponUrl }: Props) {
                 <code className="rounded bg-[var(--color-bg)] px-2 py-1 font-mono text-sm">
                   {c.code}
                 </code>
-                <CopyButton code={c.code} />
+                {c.expiresAt && now === null ? <span className="text-xs text-[var(--color-ink)]/60">기한 확인 중</span> : <CopyButton code={c.code} />}
               </div>
               <div className="mt-2 text-sm">{c.reward}</div>
               {c.expiresAt && (
@@ -113,14 +106,15 @@ export function CouponList({ coupons, couponUrl }: Props) {
                       : "mt-1 text-xs text-[var(--color-ink)]/60"
                   }
                 >
-                  {urgent ? `마감 ${left}일 남음` : `~${c.expiresAt}`}
+                  {formatExpiry(c.expiresAt)}까지{urgent ? ` · 마감 ${left}일 남음` : ""}
                 </div>
               )}
               {!c.expiresAt && (
                 <div className="mt-1 text-xs text-[var(--color-ink)]/60">
-                  기간 제한 없음
+                  {c.unlimited ? "기간 제한 없음 (공식 확인)" : "기한 미확인 · 공식 공지 확인 필요"}
                 </div>
               )}
+              {c.verifiedAt && <p className="mt-1 text-xs text-[var(--color-ink)]/60">최종 확인: {c.verifiedAt}</p>}
               {c.sourceUrl && (
                 <div className="mt-2 text-xs">
                   <a

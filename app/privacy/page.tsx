@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   robots: { index: true, follow: true },
 };
 
-const LAST_UPDATED = "2026-10-09";
+const LAST_UPDATED = "2026-10-16";
 
 export default function PrivacyPage() {
   return (
@@ -62,8 +62,17 @@ export default function PrivacyPage() {
             <p>
               사이트 유입 측정을 위해 <b>Google Analytics 4(GA4)</b>를 사용합니다.
               GA4는 익명 식별용 쿠키(_ga, _ga_*)와 접속 정보를 Google 서버로
-              전송하며, IP 주소는 <b>익명화 설정(anonymize_ip)</b>으로
-              수집됩니다.
+              전송합니다. Google 공식 안내에 따르면 GA4는 개별 IP 주소를
+              기록하거나 저장하지 않습니다. 자세한 내용은{" "}
+              <a
+                href="https://support.google.com/analytics/answer/2763052?hl=en"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-medium text-[var(--color-brand)] underline underline-offset-2"
+              >
+                Google의 GA4 IP 주소 처리 안내
+              </a>
+              를 참고하세요.
             </p>
             <p className="mt-2">
               GA4는 페이지 조회·유입 경로·접속 환경을 집계하는 데 쓰이며,

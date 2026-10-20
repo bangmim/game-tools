@@ -1,6 +1,7 @@
 import type { Game } from "./types";
 
 export const tempal: Game = {
+  indexable: false,
   slug: "tempal",
   name: "템빨: 오버기어드",
   publisher: "넥슨",
