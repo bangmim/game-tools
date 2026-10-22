@@ -53,6 +53,8 @@ type ExtractedCoupon = {
 // never descendants of the official article body.
 export const NOTICE_BODY = ".board-view__body";
 export const NOTICE_LINKS = "a.board__link";
+const NOTICE_LOAD_ATTEMPTS = 3;
+const NOTICE_LOAD_TIMEOUT_MS = 20000;
 
 export function assertNoticeUrl(raw: string, listUrl: string, detail = true): string {
   const url = new URL(raw, listUrl);
@@ -140,8 +142,32 @@ function extractPublishedAt(body: string): string | null {
 
 /** 공지 리스트에서 쿠폰 공지 URL 목록을 가져온다. */
 export async function collectNoticeUrls(page: Page, cfg: ScrapeConfig): Promise<{ title: string; url: string }[]> {
-  await navigateNotice(page, cfg.noticeListUrl, cfg.noticeListUrl, false);
-  await page.locator(NOTICE_LINKS).first().waitFor({ state: "visible", timeout: 20000 });
+  let lastError: unknown;
+  for (let attempt = 1; attempt <= NOTICE_LOAD_ATTEMPTS; attempt++) {
+    await navigateNotice(page, cfg.noticeListUrl, cfg.noticeListUrl, false);
+    try {
+      await page.locator(NOTICE_LINKS).first().waitFor({
+        state: "visible",
+        timeout: NOTICE_LOAD_TIMEOUT_MS,
+      });
+      lastError = undefined;
+      break;
+    } catch (error) {
+      lastError = error;
+      if (attempt < NOTICE_LOAD_ATTEMPTS) {
+        console.warn(
+          `[retry] 공지 목록 로딩 실패 (${attempt}/${NOTICE_LOAD_ATTEMPTS}) — ${attempt * 3000}ms 후 재시도`,
+        );
+        await page.waitForTimeout(attempt * 3000);
+      }
+    }
+  }
+  if (lastError) {
+    throw new Error(
+      `Notice list did not load after ${NOTICE_LOAD_ATTEMPTS} attempts: ${cfg.noticeListUrl}`,
+      { cause: lastError },
+    );
+  }
   const links = await page.locator(NOTICE_LINKS).evaluateAll((as) =>
     as.map((a) => ({ text: a.querySelector(".text")?.textContent?.trim() || "", href: (a as HTMLAnchorElement).href })),
   );
@@ -246,8 +272,24 @@ export async function scrapeOne(page: Page, game: Game): Promise<Coupon[]> {
 export async function main(dryRun = DRY_RUN) {
   const browser = await chromium.launch({ headless: true });
   try {
-    const context = await browser.newContext({ locale: "ko-KR" });
+    const context = await browser.newContext({
+      locale: "ko-KR",
+      timezoneId: "Asia/Seoul",
+      viewport: { width: 1440, height: 1200 },
+    });
     const page = await context.newPage();
+    page.on("requestfailed", (request) => {
+      const url = request.url();
+      if (url.startsWith("https://forum.kakaogames.com/")) {
+        console.warn(`[request failed] ${request.failure()?.errorText ?? "unknown"} ${url}`);
+      }
+    });
+    page.on("response", (response) => {
+      const url = response.url();
+      if (response.status() >= 400 && url.startsWith("https://forum.kakaogames.com/")) {
+        console.warn(`[HTTP ${response.status()}] ${url}`);
+      }
+    });
     const pending: { game: Game; coupons: Coupon[] }[] = [];
     // Complete every network read before any data file is changed.
     for (const game of GAMES) {

@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import type { Page } from "playwright";
-import { assertNoticeUrl, collectNoticeUrls, extractCouponsFromBody, NOTICE_BODY, scrapeDetail, scrapeOne } from "../scripts/scrape-coupons";
+import { assertNoticeUrl, collectNoticeUrls, extractCouponsFromBody, NOTICE_BODY, NOTICE_LINKS, scrapeDetail, scrapeOne } from "../scripts/scrape-coupons";
 import { dokkaebi } from "../data/games/dokkaebi";
 
 const listUrl = dokkaebi.scrape!.noticeListUrl;
@@ -10,17 +10,25 @@ const detailUrl = "https://forum.kakaogames.com/dokkaebi/postView/?code=notice&i
 const fixture = readFileSync("tests/fixtures/official-notice.html", "utf8");
 // Mock only browser transport/readiness. Content comes from an observed official
 // DOM shape, with a hostile comment outside the article boundary.
-function fakePage({ status = 200, missingBody = false, emptyBody = false, noResponse = false, redirect = "", noCode = false, links = [{ text: "쿠폰 안내", href: detailUrl }], detailFailure = false } = {}) {
+function fakePage({ status = 200, missingBody = false, emptyBody = false, noResponse = false, redirect = "", noCode = false, links = [{ text: "쿠폰 안내", href: detailUrl }], detailFailure = false, listFailures = 0 } = {}) {
   let current = listUrl;
   const calls: string[] = [];
+  let remainingListFailures = listFailures;
   const page = {
     url: () => current,
     goto: async (url: string) => { current = redirect || url; return noResponse ? null : { ok: () => status === 200, status: () => status }; },
+    waitForTimeout: async () => {},
     locator: (selector: string) => {
       calls.push(selector);
       return {
         first() { return this; },
-        waitFor: async () => { if (missingBody || (detailFailure && selector === NOTICE_BODY)) throw new Error("locator timeout"); },
+        waitFor: async () => {
+          if (selector === NOTICE_LINKS && remainingListFailures > 0) {
+            remainingListFailures--;
+            throw new Error("transient list timeout");
+          }
+          if (missingBody || (detailFailure && selector === NOTICE_BODY)) throw new Error("locator timeout");
+        },
         evaluateAll: async () => links,
         innerText: async () => {
           if (selector === NOTICE_BODY) return emptyBody ? "" : noCode ? "쿠폰 사용 방법을 안내합니다." : fixture.match(/class="board-view__body"><p>([\s\S]*?)<\/p>/)![1];
@@ -47,8 +55,19 @@ test("HTTP failures, SPA shell and empty article fail instead of zero-success", 
   await assert.rejects(collectNoticeUrls(fakePage({ noResponse: true }).page, dokkaebi.scrape!), /HTTP failure/);
   await assert.rejects(collectNoticeUrls(fakePage({ redirect: "https://evil.example" }).page, dokkaebi.scrape!), /Not an official/);
   await assert.rejects(collectNoticeUrls(fakePage({ links: [] }).page, dokkaebi.scrape!), /did not load/);
-  await assert.rejects(collectNoticeUrls(fakePage({ missingBody: true }).page, dokkaebi.scrape!), /timeout/);
+  await assert.rejects(collectNoticeUrls(fakePage({ missingBody: true }).page, dokkaebi.scrape!), /did not load after 3 attempts/);
   await assert.rejects(scrapeDetail(fakePage({ emptyBody: true }).page, detailUrl, listUrl), /did not load/);
+});
+
+test("notice list retries transient SPA loading failures without accepting an empty list", async () => {
+  const recovered = fakePage({ listFailures: 2 });
+  assert.equal((await collectNoticeUrls(recovered.page, dokkaebi.scrape!)).length, 1);
+
+  const exhausted = fakePage({ listFailures: 3 });
+  await assert.rejects(
+    collectNoticeUrls(exhausted.page, dokkaebi.scrape!),
+    /did not load after 3 attempts/,
+  );
 });
 
 test("notice link allowlist rejects cross-origin, wrong boards and missing ids", async () => {
