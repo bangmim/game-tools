@@ -5,7 +5,7 @@ export const tempal: Game = {
   slug: "tempal",
   name: "템빨: 오버기어드",
   publisher: "넥슨",
-  releasedAt: "2026-11 (예정)",
+  releasedAt: "2026 (예정)",
   tagline: null,
   couponUrl: null,
   probabilityUrl: null,

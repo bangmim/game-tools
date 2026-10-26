@@ -5,7 +5,7 @@ export const eclipse: Game = {
   slug: "eclipse",
   name: "이클립스: 더 어웨이크닝",
   publisher: "스마일게이트",
-  releasedAt: "2026-XX (예정)",
+  releasedAt: "2026-09-10",
   tagline: null,
   couponUrl: null,
   probabilityUrl: null,
