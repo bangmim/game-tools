@@ -6,6 +6,8 @@ import assert from "node:assert/strict";
 import { gacha } from "../lib/gacha";
 import { splitCoupons, formatExpiry } from "../lib/coupons";
 import { dokkaebi } from "../data/games/dokkaebi";
+import { eclipse } from "../data/games/eclipse";
+import { tempal } from "../data/games/tempal";
 
 test("independent draws match known probabilities and minimal target counts", () => {
   const r = gacha({ ratePercent: 1, tries: 100 });
@@ -41,12 +43,27 @@ test("coupon stays active through the full final valid minute", () => {
   assert.equal(splitCoupons([coupon], deadline - 1).active.length, 1);
   assert.equal(splitCoupons([coupon], deadline).expired.length, 1);
   assert.match(formatExpiry(coupon.expiresAt!), /11\. 05\..*23:59.*한국 시간/);
-  assert.equal(splitCoupons(dokkaebi.coupons, Date.parse("2026-11-12T00:00:00+09:00")).active.length, 3);
+  assert.equal(splitCoupons(dokkaebi.coupons, Date.parse("2026-11-12T00:00:00+09:00")).active.length, 4);
+
+  const latest = dokkaebi.coupons.find((c) => c.code === "도깨비의보답")!;
+  const latestDeadline = Date.parse(latest.expiresAt!);
+  assert.equal(splitCoupons([latest], latestDeadline - 1).active.length, 1);
+  assert.equal(splitCoupons([latest], latestDeadline).expired.length, 1);
+  assert.match(formatExpiry(latest.expiresAt!), /11\. 20\..*23:59.*한국 시간/);
 });
 
 test("unknown and officially unlimited coupons remain distinct", () => {
   assert.equal(dokkaebi.coupons.filter((c) => c.unlimited).length, 3);
-  assert.ok(dokkaebi.coupons.every((c) => c.verifiedAt === "2026-10-15"));
+  assert.ok(dokkaebi.coupons.every((c) => c.verifiedAt));
+});
+
+test("official release dates keep home release status accurate", () => {
+  assert.equal(eclipse.releasedAt, "2026-09-10");
+  assert.equal(eclipse.releasedAt.includes("예정"), false);
+  assert.equal(eclipse.indexable, false);
+  assert.equal(tempal.releasedAt, "2026 (예정)");
+  assert.equal(tempal.releasedAt.includes("예정"), true);
+  assert.equal(tempal.indexable, false);
 });
 
 test("dated coupons cannot be copied before browser deadline check", () => {

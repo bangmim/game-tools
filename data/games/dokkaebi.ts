@@ -15,6 +15,15 @@ export const dokkaebi: Game = {
   triesPresets: [10, 30, 50, 100],
   coupons: [
     {
+      code: "도깨비의보답",
+      reward: "천요석·희귀 장신구·기운 발현 재료",
+      expiresAt: "2026-11-21T00:00:00+09:00",
+      unlimited: false,
+      verifiedAt: "2026-10-26",
+      sourceUrl: "https://forum.kakaogames.com/dokkaebi/postView/?code=notice&id=13991",
+      collectedAt: "2026-10-26",
+    },
+    {
       code: "도깨비의내일",
       reward: "방어구 제작·성장 재료와 레이드·수련 지원품",
       expiresAt: "2026-11-12T00:00:00+09:00",
