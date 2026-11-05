@@ -1,5 +1,5 @@
 export const SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL ?? "https://game-tools.example.com";
+  process.env.NEXT_PUBLIC_SITE_URL ?? "https://gameting.netlify.app";
 export const SITE_NAME = "게임 도구";
 export const SITE_TAGLINE = "신작 모바일 게임 뽑기 확률 계산기 · 쿠폰 모음";
 export const SITE_DESCRIPTION =

@@ -1,12 +1,13 @@
 import type { Game } from "./types";
 
 export const eclipse: Game = {
-  indexable: false,
+  indexable: true,
   slug: "eclipse",
   name: "이클립스: 더 어웨이크닝",
   publisher: "스마일게이트",
   releasedAt: "2026-09-10",
-  tagline: null,
+  tagline:
+    "스마일게이트가 서비스하고 엔픽셀이 개발한 PC·모바일 MMORPG. 공식 쿠폰과 소환 확률 정보를 함께 확인할 수 있습니다.",
   couponUrl: "https://eclipse.onstove.com/ko/coupon",
   probabilityUrl: "https://eclipse.onstove.com/ko/probability?menu=001.001",
   ratePresets: [0.5, 1, 3],
@@ -62,7 +63,12 @@ export const eclipse: Game = {
     "이클립스",
     "이클립스 더 어웨이크닝",
     "이클립스 쿠폰",
+    "이클립스 쿠폰 코드",
+    "이클립스 쿠폰 번호",
+    "이클립스 쿠폰 입력",
     "이클립스 뽑기 확률",
-    "이클립스 사전등록",
+    "이클립스 소환 확률",
+    "이클립스 확률 계산기",
+    "이클립스 천장",
   ],
 };

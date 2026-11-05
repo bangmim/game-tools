@@ -76,7 +76,7 @@ pnpm dev
 
 | 변수 | 용도 | 미설정 시 |
 |---|---|---|
-| `NEXT_PUBLIC_SITE_URL` | canonical, Open Graph, sitemap의 기준 URL | 코드의 예시 도메인 사용 |
+| `NEXT_PUBLIC_SITE_URL` | canonical, Open Graph, sitemap의 기준 URL | `https://gameting.netlify.app` 사용 |
 | `NEXT_PUBLIC_GA_MEASUREMENT_ID` | GA4 Measurement ID | GA4 스크립트 비활성화 |
 
 운영 값은 `.env.local`이나 Netlify 환경변수에 저장합니다. `.env.local`과 비밀값은 커밋하지 않습니다.
