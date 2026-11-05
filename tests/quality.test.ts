@@ -60,7 +60,11 @@ test("unknown and officially unlimited coupons remain distinct", () => {
 test("official release dates keep home release status accurate", () => {
   assert.equal(eclipse.releasedAt, "2026-09-10");
   assert.equal(eclipse.releasedAt.includes("예정"), false);
-  assert.equal(eclipse.indexable, false);
+  assert.equal(eclipse.indexable, true);
+  assert.ok(eclipse.tagline);
+  assert.ok(eclipse.couponUrl);
+  assert.ok(eclipse.probabilityUrl);
+  assert.ok(eclipse.coupons.length > 0);
   assert.equal(tempal.releasedAt, "2026 (예정)");
   assert.equal(tempal.releasedAt.includes("예정"), true);
   assert.equal(tempal.indexable, false);
