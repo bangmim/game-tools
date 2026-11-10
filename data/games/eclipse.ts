@@ -18,7 +18,7 @@ export const eclipse: Game = {
       reward: "론칭 프리뷰 방송 기념 보상",
       expiresAt: "2026-11-11T00:00:00+09:00",
       unlimited: false,
-      verifiedAt: "2026-11-05",
+      verifiedAt: "2026-11-10",
       sourceUrl: "https://page.onstove.com/eclipse/kr/view/14504680?boardKey=146438",
       collectedAt: "2026-11-05",
     },
