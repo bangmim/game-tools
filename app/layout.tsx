@@ -56,7 +56,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 window.dataLayer = window.dataLayer || [];
                 function gtag(){dataLayer.push(arguments);}
                 gtag('js', new Date());
-                gtag('config', '${GA_MEASUREMENT_ID}', { anonymize_ip: true });
+                if (!window.location.pathname.startsWith('/admin/analytics')) {
+                  gtag('config', '${GA_MEASUREMENT_ID}', { anonymize_ip: true });
+                }
               `}
             </Script>
           </>

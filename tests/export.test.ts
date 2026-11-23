@@ -25,3 +25,13 @@ test("production metadata points search engines to the live site", () => {
   assert.match(eclipse, /<link rel="canonical" href="https:\/\/gameting\.netlify\.app\/eclipse\/"/);
   assert.doesNotMatch(eclipse, /game-tools\.example\.com/);
 });
+
+test("private analytics dashboard is exported but excluded from search", () => {
+  const robots = readFileSync("out/robots.txt", "utf8");
+  const dashboard = readFileSync("out/admin/analytics/index.html", "utf8");
+
+  assert.match(robots, /Disallow: \/admin\//);
+  assert.match(dashboard, /<meta name="robots" content="noindex, nofollow, nocache"/);
+  assert.match(dashboard, /GA4 운영 대시보드/);
+  assert.doesNotMatch(dashboard, /GA4_SERVICE_ACCOUNT_PRIVATE_KEY/);
+});
