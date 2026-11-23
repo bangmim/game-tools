@@ -7,6 +7,15 @@
   PNPM_VERSION = "10"
   NEXT_TELEMETRY_DISABLED = "1"
 
+[functions]
+  directory = "netlify/functions"
+
+[[redirects]]
+  from = "/api/ga4-dashboard"
+  to = "/.netlify/functions/ga4-dashboard"
+  status = 200
+  force = true
+
 # Static export (output: 'export') — no @netlify/plugin-nextjs needed.
 # Netlify serves the `out/` directory as a plain static site.
 
