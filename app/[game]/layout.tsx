@@ -25,8 +25,8 @@ export async function generateMetadata({
   const { game } = await params;
   const g = getGame(game);
   if (!g) return {};
-  const title = g.name;
-  const description = `${g.name} 뽑기 확률 계산기와 공식 쿠폰 코드 모음. 1개 이상 나올 확률, 천장, 필요 재화까지 1분 안에 확인하세요.`;
+  const title = `${g.name} 쿠폰·뽑기 확률 도구`;
+  const description = `${g.name}(${g.publisher}) 공식 쿠폰 출처와 입력 페이지, 뽑기 확률 계산기를 한곳에서 확인하세요.`;
   return {
     title,
     description,
@@ -75,13 +75,12 @@ export default async function GameLayout({ params, children }: Props) {
           </Link>
         </nav>
         <header className="mb-6">
-          <h1 className="text-2xl font-bold">{g.name}</h1>
+          <Link href={`/${g.slug}/`} className="text-lg font-bold hover:text-[var(--color-brand)]">
+            {g.name}
+          </Link>
           <p className="mt-1 text-xs text-[var(--color-ink)]/60">
             {g.publisher} · {g.releasedAt} 출시
           </p>
-          {g.tagline && (
-            <p className="mt-3 text-sm text-[var(--color-ink)]/80">{g.tagline}</p>
-          )}
         </header>
 
         <div className="mb-6 flex flex-wrap gap-2 border-b border-[var(--color-border)]">

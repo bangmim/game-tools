@@ -24,8 +24,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { game } = await params;
   const g = getGame(game);
   if (!g) return {};
-  const title = `${g.name} 초반 체크리스트`;
-  const description = `${g.name} 초반에 뭐부터 챙겨야 하는지 체크리스트로 정리. 공식 공지 기준으로 접속 당일·첫 주 할 일을 짧게.`;
+  const title = `${g.name} 초반 체크리스트·뉴비 가이드`;
+  const description = `${g.name} 접속 당일과 첫 주에 확인할 항목을 짧은 체크리스트로 정리합니다. 구체 수치나 미확인 추천 빌드는 제외합니다.`;
   return {
     title,
     description,
@@ -83,6 +83,13 @@ export default async function BeginnerPage({ params }: Props) {
   return (
     <>
       <JsonLd data={breadcrumb} />
+
+      <section className="mb-6">
+        <h1 className="text-2xl font-bold">{g.name} 초반 체크리스트·뉴비 가이드</h1>
+        <p className="mt-3 text-sm leading-relaxed text-[var(--color-ink)]/80">
+          미확인 수치나 특정 캐릭터 추천 대신, 공식 자료로 확인할 수 있는 범위와 일반적인 초반 확인 항목만 모았습니다.
+        </p>
+      </section>
 
       <section className="mb-6 rounded-xl border border-[var(--color-border)] bg-white p-5">
         <h2 className="text-sm font-semibold text-[var(--color-ink)]/60">

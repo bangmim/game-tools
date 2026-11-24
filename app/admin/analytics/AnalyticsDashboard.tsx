@@ -67,10 +67,12 @@ function Ranking({
   title,
   rows,
   mode,
+  emptyMessage = "표시할 데이터가 없습니다.",
 }: {
   title: string;
   rows: NamedMetric[];
   mode: "views" | "sessions";
+  emptyMessage?: string;
 }) {
   const maximum = Math.max(1, ...rows.map((row) => (mode === "views" ? row.screenPageViews ?? 0 : row.sessions)));
 
@@ -79,7 +81,7 @@ function Ranking({
       <h2 className="text-lg font-black text-slate-950">{title}</h2>
       <p className="mt-1 text-xs text-slate-500">최근 28일 · 최대 10개</p>
       <div className="mt-5 space-y-4">
-        {rows.length === 0 && <p className="py-8 text-center text-sm text-slate-500">표시할 데이터가 없습니다.</p>}
+        {rows.length === 0 && <p className="py-8 text-center text-sm font-semibold text-slate-500">{emptyMessage}</p>}
         {rows.map((row) => {
           const value = mode === "views" ? row.screenPageViews ?? 0 : row.sessions;
           return (
@@ -97,6 +99,35 @@ function Ranking({
             </div>
           );
         })}
+      </div>
+    </section>
+  );
+}
+
+function SearchAcquisition({ data }: { data: AnalyticsDashboardData["organicSearch"] }) {
+  const hasSearchTraffic = data.sessions > 0;
+  return (
+    <section className={`rounded-3xl border p-5 shadow-sm xl:col-span-2 ${hasSearchTraffic ? "border-emerald-200 bg-emerald-50/90" : "border-amber-200 bg-amber-50/90"}`}>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-xs font-black tracking-wide text-slate-500">최근 28일 · 자연 검색만 별도 집계</p>
+          <h2 className="mt-1 text-lg font-black text-slate-950">Google·Naver 검색 유입</h2>
+          <p className="mt-2 text-sm font-semibold text-slate-700">
+            {hasSearchTraffic
+              ? `검색 결과에서 ${number.format(data.sessions)}회 방문했습니다.`
+              : "검색 유입이 숨겨진 것이 아니라 GA4 집계가 0회입니다."}
+          </p>
+        </div>
+        <div className="flex gap-3">
+          <div className="min-w-24 rounded-2xl bg-white/80 p-3 text-center">
+            <p className="text-xs font-bold text-slate-500">활성 사용자</p>
+            <strong className="mt-1 block text-2xl font-black text-slate-950">{number.format(data.activeUsers)}</strong>
+          </div>
+          <div className="min-w-24 rounded-2xl bg-white/80 p-3 text-center">
+            <p className="text-xs font-bold text-slate-500">검색 세션</p>
+            <strong className="mt-1 block text-2xl font-black text-slate-950">{number.format(data.sessions)}</strong>
+          </div>
+        </div>
       </div>
     </section>
   );
@@ -261,9 +292,16 @@ export function AnalyticsDashboard() {
         <div className="mt-4"><SummaryCards summary={selectedSummary} /></div>
 
         <section className="mt-4 grid gap-4 xl:grid-cols-2">
+          <SearchAcquisition data={data.organicSearch} />
           <Trend data={data.trend} />
           <Ranking title="인기 페이지" rows={data.topPages} mode="views" />
           <Ranking title="유입 경로" rows={data.sources} mode="sessions" />
+          <Ranking
+            title="검색엔진별 자연 유입"
+            rows={data.organicSearch.sources}
+            mode="sessions"
+            emptyMessage="최근 28일 Google·Naver 등 자연 검색 유입이 0회입니다."
+          />
         </section>
 
         <footer className="py-8 text-center text-xs text-slate-500">GA4 집계에는 최대 24~48시간의 처리 지연이 있을 수 있습니다. 실시간 수치는 최근 30분 기준입니다.</footer>

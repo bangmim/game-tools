@@ -2,6 +2,7 @@ import { createSign, timingSafeEqual } from "node:crypto";
 import {
   compareSummaries,
   parseNamedMetrics,
+  parseOrganicSearch,
   parseSummary,
   parseTrend,
   toNumber,
@@ -25,6 +26,7 @@ type ReportRequest = {
   metrics: Array<{ name: string }>;
   dateRanges: Array<{ startDate: string; endDate: string }>;
   metricAggregations?: string[];
+  dimensionFilter?: Record<string, unknown>;
   orderBys?: Array<Record<string, unknown>>;
   limit?: string;
 };
@@ -165,7 +167,7 @@ const summaryRequest = (startDate: string, endDate: string): ReportRequest => ({
 
 async function loadDashboard(environment: Environment): Promise<AnalyticsDashboardData> {
   const accessToken = await getGoogleAccessToken(environment);
-  const [seven, previousSeven, twentyEight, previousTwentyEight, pages, sources, trend, realtime] =
+  const [seven, previousSeven, twentyEight, previousTwentyEight, pages, sources, organicSearch, trend, realtime] =
     await Promise.all([
       runReport(environment, accessToken, summaryRequest("6daysAgo", "today")),
       runReport(environment, accessToken, summaryRequest("13daysAgo", "7daysAgo")),
@@ -186,6 +188,20 @@ async function loadDashboard(environment: Environment): Promise<AnalyticsDashboa
         dimensions: [{ name: "sessionSourceMedium" }],
         metrics: [{ name: "activeUsers" }, { name: "sessions" }],
         dateRanges: [{ startDate: "27daysAgo", endDate: "today" }],
+        orderBys: [{ metric: { metricName: "sessions" }, desc: true }],
+        limit: "10",
+      }),
+      runReport(environment, accessToken, {
+        dimensions: [{ name: "sessionSourceMedium" }],
+        metrics: [{ name: "activeUsers" }, { name: "sessions" }],
+        dateRanges: [{ startDate: "27daysAgo", endDate: "today" }],
+        dimensionFilter: {
+          filter: {
+            fieldName: "sessionDefaultChannelGroup",
+            stringFilter: { matchType: "EXACT", value: "Organic Search" },
+          },
+        },
+        metricAggregations: ["TOTAL"],
         orderBys: [{ metric: { metricName: "sessions" }, desc: true }],
         limit: "10",
       }),
@@ -213,6 +229,7 @@ async function loadDashboard(environment: Environment): Promise<AnalyticsDashboa
     ),
     topPages: parseNamedMetrics(pages, true),
     sources: parseNamedMetrics(sources),
+    organicSearch: parseOrganicSearch(organicSearch),
     trend: parseTrend(trend),
   };
 }

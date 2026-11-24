@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {
   compareSummaries,
   parseNamedMetrics,
+  parseOrganicSearch,
   parseSummary,
   parseTrend,
   percentChange,
@@ -55,6 +56,23 @@ test("GA4 ranking and trend reports tolerate empty and malformed values", () => 
     screenPageViews: 0,
     engagementRate: 0,
   });
+});
+
+test("organic search totals distinguish zero traffic from a missing ranking", () => {
+  const organic = parseOrganicSearch({
+    totals: [{ metricValues: [{ value: "3" }, { value: "5" }] }],
+    rows: [
+      {
+        dimensionValues: [{ value: "google / organic" }],
+        metricValues: [{ value: "3" }, { value: "5" }],
+      },
+    ],
+  });
+
+  assert.equal(organic.activeUsers, 3);
+  assert.equal(organic.sessions, 5);
+  assert.equal(organic.sources[0]?.name, "google / organic");
+  assert.deepEqual(parseOrganicSearch({}), { activeUsers: 0, sessions: 0, sources: [] });
 });
 
 test("dashboard access requires an exact bearer token", () => {
