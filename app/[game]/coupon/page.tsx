@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { GAMES, getGame } from "@/data/games";
 import { CouponList } from "@/components/CouponList";
 import { Faq } from "@/components/Faq";
-import { SITE_URL } from "@/lib/site";
+import { JsonLd } from "@/components/JsonLd";
+import { SITE_NAME, SITE_URL } from "@/lib/site";
 
 export function generateStaticParams() {
   return GAMES.map((g) => ({ game: g.slug }));
@@ -17,8 +19,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { game } = await params;
   const g = getGame(game);
   if (!g) return {};
-  const title = `${g.name} 쿠폰 모음`;
-  const description = `${g.name} 공식 쿠폰 코드와 공식 입력 페이지 바로가기. 코드 복사 후 공식 페이지에서 등록하세요.`;
+  const title = `${g.name} 공식 쿠폰 코드·입력 방법`;
+  const description = `${g.name} 쿠폰 코드를 공식 공지 출처·확인일·만료 정보와 함께 보고, 공식 입력 페이지로 이동하세요.`;
   return {
     title,
     description,
@@ -38,9 +40,32 @@ export default async function CouponPage({ params }: Props) {
   if (!g) notFound();
 
   const isDokkaebi = g.slug === "dokkaebi";
+  const latestCheck = g.coupons
+    .map((coupon) => coupon.verifiedAt)
+    .filter((date): date is string => Boolean(date))
+    .sort()
+    .at(-1);
+  const breadcrumb = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: SITE_NAME, item: SITE_URL },
+      { "@type": "ListItem", position: 2, name: g.name, item: `${SITE_URL}/${g.slug}/` },
+      { "@type": "ListItem", position: 3, name: "쿠폰 코드·입력 방법", item: `${SITE_URL}/${g.slug}/coupon/` },
+    ],
+  };
 
   return (
     <>
+      <JsonLd data={breadcrumb} />
+      <section className="mb-6">
+        <h1 className="text-2xl font-bold">{g.name} 공식 쿠폰 코드·입력 방법</h1>
+        <p className="mt-3 text-sm leading-relaxed text-[var(--color-ink)]/80">
+          공식 공지에서 확인한 쿠폰만 출처와 함께 정리합니다. 코드를 복사한 뒤 {g.publisher}의 공식 입력 페이지에서 직접 등록하세요.
+        </p>
+        {latestCheck && <p className="mt-2 text-xs text-[var(--color-ink)]/60">공식 출처 최종 확인: <time dateTime={latestCheck}>{latestCheck}</time></p>}
+      </section>
+
       <section className="mb-6 rounded-xl border border-[var(--color-border)] bg-white p-5">
         <h2 className="text-sm font-semibold text-[var(--color-ink)]/60">
           쿠폰 입력 방법
@@ -100,6 +125,15 @@ export default async function CouponPage({ params }: Props) {
           },
         ]}
       />
+
+      <nav className="mt-8 grid gap-3 sm:grid-cols-2" aria-label={`${g.name} 관련 도구`}>
+        <Link href={`/${g.slug}/`} className="rounded-xl border border-[var(--color-border)] bg-white p-4 text-sm font-semibold hover:border-[var(--color-brand)]">
+          {g.name} 도구 전체 보기
+        </Link>
+        <Link href={`/${g.slug}/gacha/`} className="rounded-xl border border-[var(--color-border)] bg-white p-4 text-sm font-semibold hover:border-[var(--color-brand)]">
+          {g.name} 뽑기 확률 계산기
+        </Link>
+      </nav>
     </>
   );
 }
