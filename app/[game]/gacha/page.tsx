@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { GAMES, getGame } from "@/data/games";
 import { GachaCalculator } from "@/components/GachaCalculator";
@@ -19,8 +20,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { game } = await params;
   const g = getGame(game);
   if (!g) return {};
-  const title = `${g.name} 뽑기 확률 계산기`;
-  const description = `${g.name} 뽑기 확률을 1개 이상 나올 확률, 천장 없는 평균 획득 개수, 50·90·99% 목표에 필요한 횟수로 계산합니다. 천장은 첫 획득 보장만 반영하며 1회 비용도 계산합니다.`;
+  const title = `${g.name} 뽑기 확률·천장 계산기`;
+  const description = `${g.name} 공식 확률을 입력해 1개 이상 획득 확률과 50·90·99% 목표 횟수를 계산하세요. 천장은 첫 획득 보장만 반영합니다.`;
   return {
     title,
     description,
@@ -41,10 +42,21 @@ export default async function GachaPage({ params }: Props) {
 
   const example = gacha({ ratePercent: 1, tries: 100 });
 
+  const breadcrumb = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: SITE_NAME, item: SITE_URL },
+      { "@type": "ListItem", position: 2, name: g.name, item: `${SITE_URL}/${g.slug}/` },
+      { "@type": "ListItem", position: 3, name: "뽑기 확률·천장 계산기", item: `${SITE_URL}/${g.slug}/gacha/` },
+    ],
+  };
+
   const webApp = {
     "@context": "https://schema.org",
     "@type": "WebApplication",
     name: `${g.name} 뽑기 확률 계산기`,
+    description: `${g.name} 공식 확률을 입력해 획득 확률과 목표 횟수를 계산하는 무료 도구`,
     url: `${SITE_URL}/${g.slug}/gacha/`,
     applicationCategory: "UtilityApplication",
     operatingSystem: "Web",
@@ -55,7 +67,15 @@ export default async function GachaPage({ params }: Props) {
 
   return (
     <>
+      <JsonLd data={breadcrumb} />
       <JsonLd data={webApp} />
+
+      <section className="mb-6">
+        <h1 className="text-2xl font-bold">{g.name} 뽑기 확률·천장 계산기</h1>
+        <p className="mt-3 text-sm leading-relaxed text-[var(--color-ink)]/80">
+          {g.publisher}의 공식 확률 공시에서 확인한 퍼센트를 입력하면 획득 가능성과 목표 횟수를 계산합니다. 게임별 획득 후 초기화·이월 규칙은 결과에 포함하지 않습니다.
+        </p>
+      </section>
 
       <section className="mb-6 rounded-xl border border-[var(--color-border)] bg-white p-5">
         <h2 className="text-sm font-semibold text-[var(--color-ink)]/60">
@@ -142,6 +162,15 @@ export default async function GachaPage({ params }: Props) {
           },
         ]}
       />
+
+      <nav className="mt-8 grid gap-3 sm:grid-cols-2" aria-label={`${g.name} 관련 페이지`}>
+        <Link href={`/${g.slug}/`} className="rounded-xl border border-[var(--color-border)] bg-white p-4 text-sm font-semibold hover:border-[var(--color-brand)]">
+          {g.name} 도구 전체 보기
+        </Link>
+        <Link href={`/${g.slug}/coupon/`} className="rounded-xl border border-[var(--color-border)] bg-white p-4 text-sm font-semibold hover:border-[var(--color-brand)]">
+          {g.name} 공식 쿠폰 코드 보기
+        </Link>
+      </nav>
     </>
   );
 }

@@ -32,6 +32,11 @@ export type AnalyticsDashboardData = {
   twentyEightDays: ComparedSummary;
   topPages: NamedMetric[];
   sources: NamedMetric[];
+  organicSearch: {
+    activeUsers: number;
+    sessions: number;
+    sources: NamedMetric[];
+  };
   trend: TrendPoint[];
 };
 
@@ -102,6 +107,20 @@ export function parseNamedMetrics(
       ? { screenPageViews: toNumber(row.metricValues?.[2]?.value) }
       : {}),
   }));
+}
+
+export function parseOrganicSearch(report: GaReportResponse): AnalyticsDashboardData["organicSearch"] {
+  const sources = parseNamedMetrics(report);
+  const totals = report.totals?.[0]?.metricValues;
+  return {
+    activeUsers: totals
+      ? toNumber(totals[0]?.value)
+      : sources.reduce((sum, row) => sum + row.activeUsers, 0),
+    sessions: totals
+      ? toNumber(totals[1]?.value)
+      : sources.reduce((sum, row) => sum + row.sessions, 0),
+    sources,
+  };
 }
 
 export function parseTrend(report: GaReportResponse): TrendPoint[] {

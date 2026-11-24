@@ -79,6 +79,8 @@ pnpm dev
 |---|---|---|
 | `NEXT_PUBLIC_SITE_URL` | canonical, Open Graph, sitemap의 기준 URL | `https://gameting.netlify.app` 사용 |
 | `NEXT_PUBLIC_GA_MEASUREMENT_ID` | GA4 Measurement ID | GA4 스크립트 비활성화 |
+| `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION` | Google Search Console HTML 태그의 `content` 값 | Google 인증 메타 태그 생략 |
+| `NEXT_PUBLIC_NAVER_SITE_VERIFICATION` | Naver Search Advisor HTML 태그의 `content` 값 | Naver 인증 메타 태그 생략 |
 | `GA4_PROPERTY_ID` | 대시보드가 조회할 GA4 속성의 숫자 ID | 대시보드 API 비활성화 |
 | `GA4_SERVICE_ACCOUNT_EMAIL` | GA4 조회용 Google Cloud 서비스 계정 이메일 | 대시보드 API 비활성화 |
 | `GA4_SERVICE_ACCOUNT_PRIVATE_KEY` | 서비스 계정 JSON의 개인키 | 대시보드 API 비활성화 |
@@ -88,7 +90,7 @@ pnpm dev
 
 ### 개인용 GA4 대시보드 설정
 
-운영 배포 후 `/admin/analytics/`에서 최근 7일·28일 활성 사용자, 세션, 조회수, 참여율과 실시간 사용자, 인기 페이지, 유입 경로를 확인할 수 있습니다. 이 경로는 검색 색인과 사이트 자체 GA 페이지뷰 수집에서 제외됩니다.
+운영 배포 후 `/admin/analytics/`에서 최근 7일·28일 활성 사용자, 세션, 조회수, 참여율과 실시간 사용자, 인기 페이지, 유입 경로를 확인할 수 있습니다. Google·Naver 등 `Organic Search`는 별도 집계해 검색 세션이 0인 상태와 단순 미표시를 구분합니다. 이 경로는 검색 색인과 사이트 자체 GA 페이지뷰 수집에서 제외됩니다.
 
 1. Google Cloud 프로젝트에서 **Google Analytics Data API**를 사용 설정합니다.
 2. 조회 전용 서비스 계정을 만들고 JSON 키를 한 번 발급합니다.
@@ -97,6 +99,14 @@ pnpm dev
 5. 로컬에서 Netlify Function까지 확인할 때는 Netlify CLI의 `netlify dev`를 사용합니다. 일반 `pnpm dev`에서는 정적 화면만 확인할 수 있습니다.
 
 접근 암호는 브라우저의 `sessionStorage`에만 저장되어 탭 세션이 끝나면 사라집니다. 서비스 계정 이메일·개인키와 GA4 속성 ID는 Netlify Function 안에서만 사용됩니다.
+
+### 운영자 접속 제외
+
+배포나 콘텐츠 확인에 쓰는 각 브라우저에서 사이트 주소 뒤에 `?internal=1`을 한 번 붙여 엽니다. 예: `https://gameting.netlify.app/?internal=1`. 해당 브라우저에 표식이 저장되고 이후 GA4 수집에서 제외됩니다. 하단의 **측정 다시 켜기**를 누르면 즉시 해제됩니다. 브라우저·프로필별 저장이므로 다른 노트북이나 휴대폰에서는 한 번씩 설정합니다.
+
+### 검색엔진 등록
+
+사이트는 canonical, `robots.txt`, `sitemap.xml`을 기본 제공합니다. Google Search Console과 Naver Search Advisor에서 HTML 태그 인증법을 선택한 뒤 발급된 `content` 값만 위의 공개 환경변수에 등록합니다. 배포가 끝나면 각 도구에 `https://gameting.netlify.app/sitemap.xml`을 제출합니다. 메타 태그는 소유권 확인만 돕고 검색 노출을 보장하지는 않습니다.
 
 ## 검증
 
