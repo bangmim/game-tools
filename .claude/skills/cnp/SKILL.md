@@ -3,6 +3,17 @@ name: cnp
 description: ONLY invoke when the user explicitly types `/cnp`, `/cnp --merge`, or `/cnp --release`. Commits+pushes current branch; with --merge also merges into develop; with --release merges develop → main (production release). NEVER auto-invoke this skill — commit/push/merge is forbidden without an explicit user command.
 ---
 
+## GitHub PR 검사·리뷰 우선 규칙 (2026-11-26)
+
+- 아래 기존 커밋 승인·메시지·릴리스 경계는 유지하되, 작업 브랜치 푸시 후 열린 PR을 생성하거나 재사용한다. 인자 없는 호출은 병합하지 않는다.
+- 병합 요청에서는 로컬 merge·통합 브랜치 직접 push 대신 검증한 head SHA의 PR을 `gh pr merge --merge --match-head-commit <SHA>`로 병합한다. 저장소 필수 검사와 리뷰를 확인하고 실패·대기·미해결 변경 요청이 있으면 중단한다. 검사 없음은 성공으로 간주하지 않는다.
+- 독립 리뷰가 없으면 자기 검토와 외부 리뷰 미설정을 구분한다. AI 서비스가 실제 연결된 경우에만 리뷰를 요청한다. 본인 승인이나 관리자 우회로 통과시키지 않는다.
+- PR 실패는 PR에서 해결하고, 기본 브랜치 실패 자동화 이슈가 있으면 재사용한다. 이슈를 실패마다 새로 만들지 않는다.
+- `--merge` 또는 기존 `merge` 인자는 `develop`까지만이다. `main` 릴리스는 기존 별도 승인 절차를 반드시 지킨다. `main` push로 기존 배포·Android Bundle이 실행될 수 있으므로 이번 설정 작업만으로 릴리스하지 않는다.
+- 병합 후에만 기존 정리 규칙대로 브랜치·연결 worktree를 정리한다. 메인 worktree의 미커밋 변경은 보존하고 동기화가 막히면 강제 초기화하지 않는다.
+- 이 절차와 충돌하는 아래 로컬 merge·직접 push 단계는 실행하지 않는다.
+
+
 # /cnp — Commit · Push · (옵션) Merge · (옵션) Release
 
 ## 호출 조건 (절대 규칙)
