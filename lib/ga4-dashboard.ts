@@ -25,7 +25,15 @@ export type TrendPoint = {
   screenPageViews: number;
 };
 
+export type EventMetric = {
+  name: string;
+  eventCount: number;
+};
+
+export type AnalyticsAppKey = "game-tools" | "linkting";
+
 export type AnalyticsDashboardData = {
+  app: AnalyticsAppKey;
   generatedAt: string;
   realtimeActiveUsers: number;
   sevenDays: ComparedSummary;
@@ -38,6 +46,7 @@ export type AnalyticsDashboardData = {
     sources: NamedMetric[];
   };
   trend: TrendPoint[];
+  topEvents: EventMetric[];
 };
 
 export type GaReportRow = {
@@ -129,6 +138,13 @@ export function parseTrend(report: GaReportResponse): TrendPoint[] {
     activeUsers: toNumber(row.metricValues?.[0]?.value),
     sessions: toNumber(row.metricValues?.[1]?.value),
     screenPageViews: toNumber(row.metricValues?.[2]?.value),
+  }));
+}
+
+export function parseEvents(report: GaReportResponse): EventMetric[] {
+  return (report.rows ?? []).map((row) => ({
+    name: row.dimensionValues?.[0]?.value || "(알 수 없음)",
+    eventCount: toNumber(row.metricValues?.[0]?.value),
   }));
 }
 
