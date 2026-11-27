@@ -1,9 +1,11 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import type {
+  AnalyticsAppKey,
   AnalyticsDashboardData,
   ComparedSummary,
+  EventMetric,
   NamedMetric,
 } from "@/lib/ga4-dashboard";
 
@@ -14,8 +16,22 @@ const percent = new Intl.NumberFormat("ko-KR", {
   maximumFractionDigits: 1,
   signDisplay: "exceptZero",
 });
+const ratioPercent = new Intl.NumberFormat("ko-KR", { maximumFractionDigits: 1 });
 
 type Period = "sevenDays" | "twentyEightDays";
+
+const APPS: Array<{ key: AnalyticsAppKey; label: string; title: string }> = [
+  { key: "game-tools", label: "게임툴", title: "gameting 현황" },
+  { key: "linkting", label: "링크팅", title: "링크팅 현황" },
+];
+
+const EVENT_LABELS: Record<string, string> = {
+  puzzle_start: "퍼즐 시작",
+  puzzle_complete: "퍼즐 완료",
+  share_start: "공유 시작",
+  share_copy: "공유 문구 복사",
+  share_referral: "공유 링크 유입",
+};
 
 function Change({ value }: { value: number | null }) {
   if (value === null) return <span className="text-slate-500">신규</span>;
@@ -163,20 +179,71 @@ function Trend({ data }: { data: AnalyticsDashboardData["trend"] }) {
   );
 }
 
+function EventRanking({ rows }: { rows: EventMetric[] }) {
+  const maximum = Math.max(1, ...rows.map((row) => row.eventCount));
+  const count = (name: string) => rows.find((row) => row.name === name)?.eventCount ?? 0;
+  const starts = count("puzzle_start");
+  const completions = count("puzzle_complete");
+  const shareStarts = count("share_start");
+  const completionRate = starts > 0 ? Math.min(100, (completions / starts) * 100) : 0;
+  const shareRate = completions > 0 ? Math.min(100, (shareStarts / completions) * 100) : 0;
+  return (
+    <section className="rounded-3xl border border-white/70 bg-white/85 p-5 shadow-sm backdrop-blur xl:col-span-2">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h2 className="text-lg font-black text-slate-950">링크팅 주요 행동</h2>
+          <p className="mt-1 text-xs text-slate-500">최근 28일 · 퍼즐과 공유 이벤트</p>
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <div className="rounded-2xl bg-emerald-50 px-4 py-3 text-center">
+            <p className="text-xs font-bold text-emerald-800">퍼즐 완료율</p>
+            <strong className="mt-1 block text-xl font-black text-emerald-950">{ratioPercent.format(completionRate)}%</strong>
+          </div>
+          <div className="rounded-2xl bg-amber-50 px-4 py-3 text-center">
+            <p className="text-xs font-bold text-amber-800">완료 후 공유</p>
+            <strong className="mt-1 block text-xl font-black text-amber-950">{ratioPercent.format(shareRate)}%</strong>
+          </div>
+        </div>
+      </div>
+      <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+        {rows.length === 0 && (
+          <p className="py-8 text-center text-sm font-semibold text-slate-500 sm:col-span-2 xl:col-span-5">
+            최근 28일에 수집된 퍼즐·공유 이벤트가 없습니다.
+          </p>
+        )}
+        {rows.map((row) => (
+          <div key={row.name} className="rounded-2xl bg-indigo-50 p-4">
+            <p className="text-sm font-bold text-slate-700">{EVENT_LABELS[row.name] ?? row.name}</p>
+            <strong className="mt-2 block text-2xl font-black text-slate-950">{number.format(row.eventCount)}</strong>
+            <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-indigo-100">
+              <div className="h-full rounded-full bg-indigo-600" style={{ width: `${Math.max(3, (row.eventCount / maximum) * 100)}%` }} />
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 export function AnalyticsDashboard() {
   const [accessToken, setAccessToken] = useState("");
   const [data, setData] = useState<AnalyticsDashboardData | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [period, setPeriod] = useState<Period>("twentyEightDays");
+  const [selectedApp, setSelectedApp] = useState<AnalyticsAppKey>("game-tools");
 
-  const load = async (token: string) => {
+  const load = useCallback(async (token: string, app: AnalyticsAppKey) => {
     setLoading(true);
     setError("");
     try {
       const response = await fetch("/api/ga4-dashboard", {
         method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ app }),
       });
       const contentType = response.headers.get("content-type") ?? "";
       if (!contentType.includes("application/json")) {
@@ -190,24 +257,24 @@ export function AnalyticsDashboard() {
       if (!response.ok) throw new Error(payload.error || "데이터를 불러오지 못했습니다.");
       sessionStorage.setItem(STORAGE_KEY, token);
       setData(payload);
+      setSelectedApp(app);
     } catch (reason) {
-      setData(null);
       setError(reason instanceof Error ? reason.message : "데이터를 불러오지 못했습니다.");
       if (reason instanceof Error && reason.message.includes("암호")) sessionStorage.removeItem(STORAGE_KEY);
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     const saved = sessionStorage.getItem(STORAGE_KEY);
     if (saved) {
       queueMicrotask(() => {
         setAccessToken(saved);
-        void load(saved);
+        void load(saved, "game-tools");
       });
     }
-  }, []);
+  }, [load]);
 
   const generatedAt = useMemo(
     () => data ? new Intl.DateTimeFormat("ko-KR", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Seoul" }).format(new Date(data.generatedAt)) : "",
@@ -216,7 +283,7 @@ export function AnalyticsDashboard() {
 
   const submit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (accessToken.trim()) void load(accessToken.trim());
+    if (accessToken.trim()) void load(accessToken.trim(), selectedApp);
   };
 
   const logout = () => {
@@ -257,6 +324,7 @@ export function AnalyticsDashboard() {
   }
 
   const selectedSummary = data[period];
+  const selectedAppInfo = APPS.find((app) => app.key === selectedApp) ?? APPS[0];
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,_#c7d2fe,_transparent_35%),radial-gradient(circle_at_top_right,_#fde68a,_transparent_28%)] px-4 py-6 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl">
@@ -265,14 +333,30 @@ export function AnalyticsDashboard() {
             <div className="flex items-center gap-2 text-xs font-black tracking-[0.16em] text-indigo-300">
               <span className="inline-block h-2 w-2 animate-pulse rounded-full bg-emerald-400" /> LIVE ANALYTICS
             </div>
-            <h1 className="mt-3 text-3xl font-black tracking-tight sm:text-4xl">gameting 현황</h1>
+            <h1 className="mt-3 text-3xl font-black tracking-tight sm:text-4xl">{selectedAppInfo.title}</h1>
             <p className="mt-2 text-sm text-slate-400">마지막 갱신 {generatedAt}</p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <button onClick={() => void load(accessToken)} disabled={loading} className="rounded-xl bg-white px-4 py-2 text-sm font-black text-slate-950 disabled:opacity-50">{loading ? "갱신 중…" : "새로고침"}</button>
+            <button onClick={() => void load(accessToken, selectedApp)} disabled={loading} className="rounded-xl bg-white px-4 py-2 text-sm font-black text-slate-950 disabled:opacity-50">{loading ? "갱신 중…" : "새로고침"}</button>
             <button onClick={logout} className="rounded-xl border border-slate-700 px-4 py-2 text-sm font-bold text-slate-300">잠그기</button>
           </div>
         </header>
+
+        <nav className="mt-5 inline-flex rounded-2xl bg-slate-950 p-1 shadow-sm" aria-label="분석할 앱 선택">
+          {APPS.map((app) => (
+            <button
+              key={app.key}
+              type="button"
+              disabled={loading}
+              onClick={() => void load(accessToken, app.key)}
+              className={`rounded-xl px-5 py-2.5 text-sm font-black transition disabled:cursor-wait disabled:opacity-60 ${selectedApp === app.key ? "bg-white text-slate-950" : "text-slate-400 hover:text-white"}`}
+            >
+              {app.label}
+            </button>
+          ))}
+        </nav>
+
+        {error && <p role="alert" className="mt-4 rounded-2xl bg-rose-50 p-3 text-sm font-semibold text-rose-700">{error}</p>}
 
         <section className="mt-5 grid gap-3 sm:grid-cols-[1fr_auto] sm:items-center">
           <div className="inline-flex w-fit rounded-2xl bg-white/80 p-1 shadow-sm">
@@ -302,6 +386,7 @@ export function AnalyticsDashboard() {
             mode="sessions"
             emptyMessage="최근 28일 Google·Naver 등 자연 검색 유입이 0회입니다."
           />
+          {selectedApp === "linkting" && <EventRanking rows={data.topEvents} />}
         </section>
 
         <footer className="py-8 text-center text-xs text-slate-500">GA4 집계에는 최대 24~48시간의 처리 지연이 있을 수 있습니다. 실시간 수치는 최근 30분 기준입니다.</footer>

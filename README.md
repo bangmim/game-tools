@@ -82,6 +82,7 @@ pnpm dev
 | `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION` | Google Search Console HTML 태그의 `content` 값 | Google 인증 메타 태그 생략 |
 | `NEXT_PUBLIC_NAVER_SITE_VERIFICATION` | Naver Search Advisor HTML 태그의 `content` 값 | Naver 인증 메타 태그 생략 |
 | `GA4_PROPERTY_ID` | 대시보드가 조회할 GA4 속성의 숫자 ID | 대시보드 API 비활성화 |
+| `GA4_LINKTING_PROPERTY_ID` | 대시보드가 조회할 링크팅 웹 GA4 속성 ID | 링크팅 탭만 비활성화 |
 | `GA4_SERVICE_ACCOUNT_EMAIL` | GA4 조회용 Google Cloud 서비스 계정 이메일 | 대시보드 API 비활성화 |
 | `GA4_SERVICE_ACCOUNT_PRIVATE_KEY` | 서비스 계정 JSON의 개인키 | 대시보드 API 비활성화 |
 | `GA4_DASHBOARD_ACCESS_TOKEN` | 개인 대시보드 접근 암호 | 대시보드 API 비활성화 |
@@ -90,12 +91,12 @@ pnpm dev
 
 ### 개인용 GA4 대시보드 설정
 
-운영 배포 후 `/admin/analytics/`에서 최근 7일·28일 활성 사용자, 세션, 조회수, 참여율과 실시간 사용자, 인기 페이지, 유입 경로를 확인할 수 있습니다. Google·Naver 등 `Organic Search`는 별도 집계해 검색 세션이 0인 상태와 단순 미표시를 구분합니다. 이 경로는 검색 색인과 사이트 자체 GA 페이지뷰 수집에서 제외됩니다.
+운영 배포 후 `/admin/analytics/`에서 게임툴과 링크팅을 전환하며 최근 7일·28일 활성 사용자, 세션, 조회수, 참여율과 실시간 사용자, 인기 페이지, 유입 경로를 확인할 수 있습니다. 링크팅 탭은 퍼즐 시작·완료와 공유 이벤트도 최근 28일 기준으로 표시합니다. Google·Naver 등 `Organic Search`는 별도 집계해 검색 세션이 0인 상태와 단순 미표시를 구분합니다. 이 경로는 검색 색인과 사이트 자체 GA 페이지뷰 수집에서 제외됩니다.
 
 1. Google Cloud 프로젝트에서 **Google Analytics Data API**를 사용 설정합니다.
 2. 조회 전용 서비스 계정을 만들고 JSON 키를 한 번 발급합니다.
-3. GA4 `관리 > 속성 액세스 관리`에서 서비스 계정 이메일을 **뷰어**로 추가합니다.
-4. 위 표의 서버 전용 변수 4개를 Netlify 환경변수에 등록합니다. 개인키는 저장소나 `NEXT_PUBLIC_` 변수에 넣지 않습니다.
+3. 게임툴과 링크팅 GA4의 `관리 > 속성 액세스 관리`에서 같은 서비스 계정 이메일을 각각 **뷰어**로 추가합니다.
+4. 위 표의 서버 전용 변수 5개를 Netlify 환경변수에 등록합니다. 링크팅 속성 ID는 `558624156`입니다. 개인키는 저장소나 `NEXT_PUBLIC_` 변수에 넣지 않습니다.
 5. 로컬에서 Netlify Function까지 확인할 때는 Netlify CLI의 `netlify dev`를 사용합니다. 일반 `pnpm dev`에서는 정적 화면만 확인할 수 있습니다.
 
 접근 암호는 브라우저의 `sessionStorage`에만 저장되어 탭 세션이 끝나면 사라집니다. 서비스 계정 이메일·개인키와 GA4 속성 ID는 Netlify Function 안에서만 사용됩니다.
