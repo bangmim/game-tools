@@ -2,11 +2,13 @@ import { createSign, timingSafeEqual } from "node:crypto";
 import {
   compareSummaries,
   parseNamedMetrics,
+  parseEvents,
   parseOrganicSearch,
   parseSummary,
   parseTrend,
   toNumber,
   type AnalyticsDashboardData,
+  type AnalyticsAppKey,
   type GaReportResponse,
 } from "../../lib/ga4-dashboard";
 
@@ -15,10 +17,27 @@ const TOKEN_ENDPOINT = "https://oauth2.googleapis.com/token";
 const DATA_API = "https://analyticsdata.googleapis.com/v1beta";
 
 type Environment = {
-  GA4_PROPERTY_ID: string;
-  GA4_SERVICE_ACCOUNT_EMAIL: string;
-  GA4_SERVICE_ACCOUNT_PRIVATE_KEY: string;
-  GA4_DASHBOARD_ACCESS_TOKEN: string;
+  propertyId: string;
+  serviceAccountEmail: string;
+  serviceAccountPrivateKey: string;
+  dashboardAccessToken: string;
+};
+
+const APP_CONFIG: Record<AnalyticsAppKey, { propertyEnvironmentKey: string; eventNames: string[] }> = {
+  "game-tools": {
+    propertyEnvironmentKey: "GA4_PROPERTY_ID",
+    eventNames: ["__no_custom_events__"],
+  },
+  linkting: {
+    propertyEnvironmentKey: "GA4_LINKTING_PROPERTY_ID",
+    eventNames: [
+      "puzzle_start",
+      "puzzle_complete",
+      "share_start",
+      "share_copy",
+      "share_referral",
+    ],
+  },
 };
 
 type ReportRequest = {
@@ -42,9 +61,10 @@ function json(body: unknown, status = 200): Response {
   });
 }
 
-function readEnvironment(): Environment {
+function readEnvironment(app: AnalyticsAppKey): Environment {
+  const propertyEnvironmentKey = APP_CONFIG[app].propertyEnvironmentKey;
   const keys = [
-    "GA4_PROPERTY_ID",
+    propertyEnvironmentKey,
     "GA4_SERVICE_ACCOUNT_EMAIL",
     "GA4_SERVICE_ACCOUNT_PRIVATE_KEY",
     "GA4_DASHBOARD_ACCESS_TOKEN",
@@ -55,9 +75,24 @@ function readEnvironment(): Environment {
     throw new Error(`Missing environment variables: ${missing.join(", ")}`);
   }
 
-  return Object.fromEntries(
-    keys.map((key) => [key, process.env[key]!.trim()]),
-  ) as unknown as Environment;
+  return {
+    propertyId: process.env[propertyEnvironmentKey]!.trim(),
+    serviceAccountEmail: process.env.GA4_SERVICE_ACCOUNT_EMAIL!.trim(),
+    serviceAccountPrivateKey: process.env.GA4_SERVICE_ACCOUNT_PRIVATE_KEY!.trim(),
+    dashboardAccessToken: process.env.GA4_DASHBOARD_ACCESS_TOKEN!.trim(),
+  };
+}
+
+export async function readRequestedApp(request: Request): Promise<AnalyticsAppKey | null> {
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return "game-tools";
+  }
+  if (!body || typeof body !== "object" || !("app" in body)) return "game-tools";
+  const app = (body as { app?: unknown }).app;
+  return app === "game-tools" || app === "linkting" ? app : null;
 }
 
 export function hasValidAccessToken(request: Request, expected: string): boolean {
@@ -83,7 +118,7 @@ async function getGoogleAccessToken(environment: Environment): Promise<string> {
   const header = base64Url(JSON.stringify({ alg: "RS256", typ: "JWT" }));
   const claims = base64Url(
     JSON.stringify({
-      iss: environment.GA4_SERVICE_ACCOUNT_EMAIL,
+      iss: environment.serviceAccountEmail,
       scope: ANALYTICS_SCOPE,
       aud: TOKEN_ENDPOINT,
       iat: now,
@@ -94,7 +129,7 @@ async function getGoogleAccessToken(environment: Environment): Promise<string> {
   const signer = createSign("RSA-SHA256");
   signer.update(unsigned);
   signer.end();
-  const privateKey = environment.GA4_SERVICE_ACCOUNT_PRIVATE_KEY.replace(
+  const privateKey = environment.serviceAccountPrivateKey.replace(
     /\\n/g,
     "\n",
   );
@@ -121,7 +156,7 @@ async function runReport(
   request: ReportRequest,
 ): Promise<GaReportResponse> {
   const response = await fetch(
-    `${DATA_API}/properties/${encodeURIComponent(environment.GA4_PROPERTY_ID)}:runReport`,
+    `${DATA_API}/properties/${encodeURIComponent(environment.propertyId)}:runReport`,
     {
       method: "POST",
       headers: {
@@ -140,7 +175,7 @@ async function runRealtimeReport(
   accessToken: string,
 ): Promise<GaReportResponse> {
   const response = await fetch(
-    `${DATA_API}/properties/${encodeURIComponent(environment.GA4_PROPERTY_ID)}:runRealtimeReport`,
+    `${DATA_API}/properties/${encodeURIComponent(environment.propertyId)}:runRealtimeReport`,
     {
       method: "POST",
       headers: {
@@ -165,9 +200,12 @@ const summaryRequest = (startDate: string, endDate: string): ReportRequest => ({
   metricAggregations: ["TOTAL"],
 });
 
-async function loadDashboard(environment: Environment): Promise<AnalyticsDashboardData> {
+async function loadDashboard(
+  environment: Environment,
+  app: AnalyticsAppKey,
+): Promise<AnalyticsDashboardData> {
   const accessToken = await getGoogleAccessToken(environment);
-  const [seven, previousSeven, twentyEight, previousTwentyEight, pages, sources, organicSearch, trend, realtime] =
+  const [seven, previousSeven, twentyEight, previousTwentyEight, pages, sources, organicSearch, trend, events, realtime] =
     await Promise.all([
       runReport(environment, accessToken, summaryRequest("6daysAgo", "today")),
       runReport(environment, accessToken, summaryRequest("13daysAgo", "7daysAgo")),
@@ -216,10 +254,24 @@ async function loadDashboard(environment: Environment): Promise<AnalyticsDashboa
         orderBys: [{ dimension: { dimensionName: "date" } }],
         limit: "31",
       }),
+      runReport(environment, accessToken, {
+        dimensions: [{ name: "eventName" }],
+        metrics: [{ name: "eventCount" }],
+        dateRanges: [{ startDate: "27daysAgo", endDate: "today" }],
+        dimensionFilter: {
+          filter: {
+            fieldName: "eventName",
+            inListFilter: { values: APP_CONFIG[app].eventNames },
+          },
+        },
+        orderBys: [{ metric: { metricName: "eventCount" }, desc: true }],
+        limit: "10",
+      }),
       runRealtimeReport(environment, accessToken),
     ]);
 
   return {
+    app,
     generatedAt: new Date().toISOString(),
     realtimeActiveUsers: toNumber(realtime.rows?.[0]?.metricValues?.[0]?.value),
     sevenDays: compareSummaries(parseSummary(seven), parseSummary(previousSeven)),
@@ -231,26 +283,30 @@ async function loadDashboard(environment: Environment): Promise<AnalyticsDashboa
     sources: parseNamedMetrics(sources),
     organicSearch: parseOrganicSearch(organicSearch),
     trend: parseTrend(trend),
+    topEvents: parseEvents(events),
   };
 }
 
 export default async function handler(request: Request): Promise<Response> {
   if (request.method !== "POST") return json({ error: "Method not allowed" }, 405);
 
+  const app = await readRequestedApp(request);
+  if (!app) return json({ error: "지원하지 않는 앱입니다." }, 400);
+
   let environment: Environment;
   try {
-    environment = readEnvironment();
+    environment = readEnvironment(app);
   } catch (error) {
     console.error("GA4 dashboard configuration error", error);
     return json({ error: "대시보드 서버 설정이 완료되지 않았습니다." }, 503);
   }
 
-  if (!hasValidAccessToken(request, environment.GA4_DASHBOARD_ACCESS_TOKEN)) {
+  if (!hasValidAccessToken(request, environment.dashboardAccessToken)) {
     return json({ error: "접근 암호가 올바르지 않습니다." }, 401);
   }
 
   try {
-    return json(await loadDashboard(environment));
+    return json(await loadDashboard(environment, app));
   } catch (error) {
     console.error("GA4 dashboard request failed", error);
     return json(

@@ -36,7 +36,12 @@ yarn-error.log*
 
 # netlify
 .netlify/
-.agents/
+.agents/*
+!.agents/skills/
+.agents/skills/*
+!.agents/skills/cnp/
+.agents/skills/cnp/*
+!.agents/skills/cnp/SKILL.md
 .playwright-mcp/
 
 # typescript

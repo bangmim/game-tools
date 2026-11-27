@@ -82,6 +82,7 @@ pnpm dev
 | `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION` | Google Search Console HTML 태그의 `content` 값 | Google 인증 메타 태그 생략 |
 | `NEXT_PUBLIC_NAVER_SITE_VERIFICATION` | Naver Search Advisor HTML 태그의 `content` 값 | Naver 인증 메타 태그 생략 |
 | `GA4_PROPERTY_ID` | 대시보드가 조회할 GA4 속성의 숫자 ID | 대시보드 API 비활성화 |
+| `GA4_LINKTING_PROPERTY_ID` | 대시보드가 조회할 링크팅 웹 GA4 속성 ID | 링크팅 탭만 비활성화 |
 | `GA4_SERVICE_ACCOUNT_EMAIL` | GA4 조회용 Google Cloud 서비스 계정 이메일 | 대시보드 API 비활성화 |
 | `GA4_SERVICE_ACCOUNT_PRIVATE_KEY` | 서비스 계정 JSON의 개인키 | 대시보드 API 비활성화 |
 | `GA4_DASHBOARD_ACCESS_TOKEN` | 개인 대시보드 접근 암호 | 대시보드 API 비활성화 |
@@ -90,12 +91,12 @@ pnpm dev
 
 ### 개인용 GA4 대시보드 설정
 
-운영 배포 후 `/admin/analytics/`에서 최근 7일·28일 활성 사용자, 세션, 조회수, 참여율과 실시간 사용자, 인기 페이지, 유입 경로를 확인할 수 있습니다. Google·Naver 등 `Organic Search`는 별도 집계해 검색 세션이 0인 상태와 단순 미표시를 구분합니다. 이 경로는 검색 색인과 사이트 자체 GA 페이지뷰 수집에서 제외됩니다.
+운영 배포 후 `/admin/analytics/`에서 게임툴과 링크팅을 전환하며 최근 7일·28일 활성 사용자, 세션, 조회수, 참여율과 실시간 사용자, 인기 페이지, 유입 경로를 확인할 수 있습니다. 링크팅 탭은 퍼즐 시작·완료와 공유 이벤트도 최근 28일 기준으로 표시합니다. Google·Naver 등 `Organic Search`는 별도 집계해 검색 세션이 0인 상태와 단순 미표시를 구분합니다. 이 경로는 검색 색인과 사이트 자체 GA 페이지뷰 수집에서 제외됩니다.
 
 1. Google Cloud 프로젝트에서 **Google Analytics Data API**를 사용 설정합니다.
 2. 조회 전용 서비스 계정을 만들고 JSON 키를 한 번 발급합니다.
-3. GA4 `관리 > 속성 액세스 관리`에서 서비스 계정 이메일을 **뷰어**로 추가합니다.
-4. 위 표의 서버 전용 변수 4개를 Netlify 환경변수에 등록합니다. 개인키는 저장소나 `NEXT_PUBLIC_` 변수에 넣지 않습니다.
+3. 게임툴과 링크팅 GA4의 `관리 > 속성 액세스 관리`에서 같은 서비스 계정 이메일을 각각 **뷰어**로 추가합니다.
+4. 위 표의 서버 전용 변수 5개를 Netlify 환경변수에 등록합니다. 링크팅 속성 ID는 `558624156`입니다. 개인키는 저장소나 `NEXT_PUBLIC_` 변수에 넣지 않습니다.
 5. 로컬에서 Netlify Function까지 확인할 때는 Netlify CLI의 `netlify dev`를 사용합니다. 일반 `pnpm dev`에서는 정적 화면만 확인할 수 있습니다.
 
 접근 암호는 브라우저의 `sessionStorage`에만 저장되어 탭 세션이 끝나면 사라집니다. 서비스 계정 이메일·개인키와 GA4 속성 ID는 Netlify Function 안에서만 사용됩니다.
@@ -165,3 +166,13 @@ docs/HANDOFF.md           운영·아키텍처 인수인계 문서
 ## 문의
 
 잘못된 쿠폰 정보, 공식 출처 정정, 저작권·상표 관련 삭제 요청은 [akiyun10@gmail.com](mailto:akiyun10@gmail.com)으로 보내주세요.
+
+## GitHub 검사와 이슈 추적
+
+`CI`는 PR과 `develop`·`main` push에서 타입 검사와 기존 테스트를 실행합니다. lint가 구성된 저장소는 lint도 실행합니다. PR 실패는 PR 검사 결과로 남기고, GitHub 기본 브랜치의 push CI 실패만 이슈로 등록합니다. 반복 실패는 열린 CI 이슈에 모으며 같은 실행 시도는 중복 기록하지 않습니다. 원인이 다른 실패는 확인 후 이슈를 분리합니다. 실제 실행 로그는 GitHub 링크로 확인하고 비밀값이나 전체 로그는 이슈에 복사하지 않습니다.
+
+CI는 EAS·OTA·스토어 제출·네이티브 빌드·운영 배포를 실행하지 않습니다. AI 리뷰 연결과 필수 검사 브랜치 보호는 별도 설정입니다. `workflow_run` 이슈 workflow는 기본 브랜치에 있어야 활성화되므로 `develop` 반영만으로 기본 브랜치 활성화가 완료됐다고 판단하지 않습니다.
+
+정적 export 결과를 읽는 `tests/export.test.ts`는 빌드 승인이 필요한 별도 검증으로 남기고 이 CI에는 포함하지 않습니다. 쿠폰 수집 workflow의 `develop` 직접 push는 유지합니다. GitHub Actions 토큰이 만든 push는 다른 workflow를 자동 실행하지 않을 수 있으므로 쿠폰 수집 성공을 CI 통과로 표현하지 않습니다.
+
+`.github/branch-protection.json`은 `main` 보호 설정 후보이며 자동으로 적용되지 않습니다. 실제 CI의 `verify` 검사·GitHub Actions 앱을 확인한 뒤 적용합니다. `develop` 보호는 기존 자동 push 여부를 따로 확인해야 하며, 쿠폰 수집처럼 직접 반영하는 자동화가 있는 브랜치에는 이 PR 필수 규칙을 그대로 적용하지 않습니다.
